@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>MPF ClearMatch – Prototype</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; padding: 0; background: #f5f5f7; }
+    header { background: #004578; color: #fff; padding: 1rem 1.5rem; }
+    header h1 { margin: 0; font-size: 1.4rem; }
+    header p { margin: 0.25rem 0 0; font-size: 0.9rem; opacity: 0.9; }
+    main { padding: 1.5rem; max-width: 960px; margin: 0 auto; }
+    section { background: #fff; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    h2 { margin-top: 0; font-size: 1.1rem; }
+    .upload-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+    label { display: block; font-size: 0.9rem; margin-bottom: 0.25rem; font-weight: 600; }
+    input[type="file"] { width: 100%; }
+    button { background: #004578; color: #fff; border: none; border-radius: 4px; padding: 0.5rem 1rem; cursor: pointer; font-size: 0.95rem; }
+    button[disabled] { opacity: 0.5; cursor: default; }
+    .btn-secondary { background: #666; }
+    .status { font-size: 0.9rem; margin-top: 0.5rem; }
+    .status--ok { color: #107c10; }
+    .status--err { color: #a4262c; }
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.5rem; margin-top: 0.5rem; }
+    .card { background: #f3f2f1; border-radius: 6px; padding: 0.6rem 0.7rem; font-size: 0.85rem; }
+    .card-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: #605e5c; }
+    .card-value { font-size: 1.1rem; font-weight: 600; margin-top: 0.25rem; }
+    table { width: 100%; border-collapse: collapse; margin-top: 0.75rem; font-size: 0.85rem; }
+    th, td { padding: 0.4rem 0.5rem; border-bottom: 1px solid #e1dfdd; text-align: left; }
+    th { background: #f3f2f1; font-weight: 600; }
+    .badge { display: inline-block; padding: 0.1rem 0.4rem; border-radius: 999px; font-size: 0.75rem; }
+    .badge-Underpay { background: #fde7e9; color: #a4262c; }
+    .badge-Overpay { background: #fff4ce; color: #986f0b; }
+    .badge-Missing { background: #fff4ce; color: #986f0b; }
+    .badge-Late { background: #fff4ce; color: #986f0b; }
+    .badge-Matched { background: #dff6dd; color: #107c10; }
+    .explanation { margin-top: 0.5rem; padding: 0.5rem 0.6rem; border-left: 3px solid #004578; background: #f3f2f1; font-size: 0.85rem; white-space: pre-wrap; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>MPF ClearMatch (Prototype)</h1>
+    <p>GenAI‑powered MPF contribution reconciliation – demo UI</p>
+  </header>
+
+  <main>
+    <section>
+      <h2>1. Upload payroll & trustee files</h2>
+      <div class="upload-grid">
+        <div>
+          <label for="payrollFile">Payroll CSV</label>
+          <input type="file" id="payrollFile" accept=".csv" />
+        </div>
+        <div>
+          <label for="trusteeFile">Trustee / Bank CSV</label>
+          <input type="file" id="trusteeFile" accept=".csv" />
+        </div>
+      </div>
+      <div style="margin-top: 0.75rem;">
+        <button id="reconcileBtn">Reconcile now</button>
+        <span id="reconcileStatus" class="status"></span>
+      </div>
+    </section>
+
+    <section id="resultsSection" class="hidden">
+      <h2>2. Reconciliation results</h2>
+      <div class="summary-grid">
+        <div class="card">
+          <div class="card-title">Employees</div>
+          <div class="card-value" id="summaryEmployees">–</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Match rate</div>
+          <div class="card-value" id="summaryMatchRate">–</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Exceptions</div>
+          <div class="card-value" id="summaryExceptions">–</div>
+        </div>
+      </div>
+
+      <table id="exceptionsTable">
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Period</th>
+            <th>Issue</th>
+            <th>Expected ER/EE</th>
+            <th>Received ER/EE</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="exceptionsBody">
+        </tbody>
+      </table>
+
+      <div id="explanationBlock" class="explanation hidden"></div>
+    </section>
+  </main>
+
+  <script>
+    const reconcileBtn = document.getElementById('reconcileBtn');
+    const reconcileStatus = document.getElementById('reconcileStatus');
+    const resultsSection = document.getElementById('resultsSection');
+    const summaryEmployees = document.getElementById('summaryEmployees');
+    const summaryMatchRate = document.getElementById('summaryMatchRate');
+    const summaryExceptions = document.getElementById('summaryExceptions');
+    const exceptionsBody = document.getElementById('exceptionsBody');
+    const explanationBlock = document.getElementById('explanationBlock');
+
+    function setStatus(message, type) {
+      reconcileStatus.textContent = message;
+      reconcileStatus.className = 'status ' + (type === 'error' ? 'status--err' : 'status--ok');
+    }
+
+    function parseCsv(text) {
+      const lines = text.trim().split(/\r?\n/);
+      const headers = lines[0].split(',').map(h => h.trim());
+      return lines.slice(1).map(line => {
+        const cols = line.split(',');
+        const obj = {};
+        headers.forEach((h, i) => {
+          obj[h] = (cols[i] || '').trim();
+        });
+        return obj;
+      });
+    }
+
+    async function handleReconcile() {
+      const payrollFile = document.getElementById('payrollFile').files[0];
+      const trusteeFile = document.getElementById('trusteeFile').files[0];
+      explanationBlock.classList.add('hidden');
+      explanationBlock.textContent = '';
+
+      if (!payrollFile || !trusteeFile) {
+        setStatus('Please choose both payroll and trustee CSV files.', 'error');
+        return;
+      }
+
+      reconcileBtn.disabled = true;
+      setStatus('Reconciling…', 'ok');
+      resultsSection.classList.add('hidden');
+
+      try {
+        const [payrollText, trusteeText] = await Promise.all([
+          payrollFile.text(),
+          trusteeFile.text()
+        ]);
+
+        const payroll = parseCsv(payrollText);
+        const trustee = parseCsv(trusteeText);
+
+        const res = await fetch('/api/reconcile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ payroll, trustee })
+        });
+
+        if (!res.ok) {
+          throw new Error('Reconcile API error: ' + res.status);
+        }
+
+        const data = await res.json();
+        // Expecting: { matchRate, totalEmployees, exceptions: [...] }
+        summaryEmployees.textContent = data.totalEmployees ?? '–';
+        summaryMatchRate.textContent = data.matchRate != null
+          ? Math.round(data.matchRate * 100) + '%'
+          : '–';
+        summaryExceptions.textContent = data.exceptions ? data.exceptions.length : 0;
+
+        // Build table
+        exceptionsBody.innerHTML = '';
+        (data.exceptions || []).forEach((ex, idx) => {
+          const tr = document.createElement('tr');
+
+          const tdEmp = document.createElement('td');
+          tdEmp.textContent = ex.empName || ex.empId || '–';
+
+          const tdPeriod = document.createElement('td');
+          tdPeriod.textContent = ex.period || '–';
+
+          const tdIssue = document.createElement('td');
+          const spanIssue = document.createElement('span');
+          spanIssue.textContent = ex.issueType || ex.status || 'Exception';
+          spanIssue.className = 'badge badge-' + (ex.issueType || ex.status || 'Exception');
+          tdIssue.appendChild(spanIssue);
+
+          const tdExpected = document.createElement('td');
+          tdExpected.textContent = `${ex.expectedER ?? '-'} / ${ex.expectedEE ?? '-'}`;
+
+          const tdReceived = document.createElement('td');
+          tdReceived.textContent = `${ex.receivedER ?? '-'} / ${ex.receivedEE ?? '-'}`;
+
+          const tdAction = document.createElement('td');
+          const btnExplain = document.createElement('button');
+          btnExplain.textContent = 'Explain';
+          btnExplain.className = 'btn-secondary';
+          btnExplain.type = 'button';
+          btnExplain.onclick = () => explainException(ex);
+          tdAction.appendChild(btnExplain);
+
+          tr.appendChild(tdEmp);
+          tr.appendChild(tdPeriod);
+          tr.appendChild(tdIssue);
+          tr.appendChild(tdExpected);
+          tr.appendChild(tdReceived);
+          tr.appendChild(tdAction);
+
+          exceptionsBody.appendChild(tr);
+        });
+
+        resultsSection.classList.remove('hidden');
+        setStatus('Reconciliation completed.', 'ok');
+      } catch (err) {
+        console.error(err);
+        setStatus('Error during reconciliation: ' + err.message, 'error');
+      } finally {
+        reconcileBtn.disabled = false;
+      }
+    }
+
+    async function explainException(exception) {
+      explanationBlock.classList.remove('hidden');
+      explanationBlock.textContent = 'Generating explanation…';
+
+      try {
+        const res = await fetch('/api/explain', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ exception })
+        });
+
+        if (!res.ok) {
+          throw new Error('Explain API error: ' + res.status);
+        }
+
+        const data = await res.json();
+        explanationBlock.textContent = data.explanation || 'No explanation received.';
+      } catch (err) {
+        console.error(err);
+        explanationBlock.textContent = 'Error generating explanation: ' + err.message;
+      }
+    }
+
+    reconcileBtn.addEventListener('click', handleReconcile);
+  </script>
+</body>
+</html>
