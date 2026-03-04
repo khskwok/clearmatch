@@ -33,8 +33,15 @@ This document outlines the steps to deploy the ClearMatch Static Web App and its
      --output table
    ```
 
-   - This command initializes a GitHub Actions workflow if running from a git repo.
-   - The `--branch` parameter should match the primary branch (e.g. `main`).
+   - **Important:** the CLI expects to run from within a git repository that is
+     connected to GitHub or Azure DevOps. When executed in a plain local folder
+     it will fail with a message about needing a PAT (as seen earlier).
+   - If your code is already hosted on GitHub, clone that repo and run the
+     command there; the command will then automatically configure the
+     GitHub Actions workflow.
+   - If you prefer not to use GitHub Actions, create the Static Web App using
+     the Azure Portal and choose "Skip GitHub workflow" on the creation page
+     (this produces an empty SWA resource you can deploy to manually).
 
 3. **Verify** the deployment in the Azure Portal: navigate to the Static Web App resource and note the default URL.
 
@@ -51,6 +58,83 @@ This document outlines the steps to deploy the ClearMatch Static Web App and its
 3. Save and restart the app if prompted.
 
 > 🔐 Do **not** commit secrets to source control; use the portal or CLI to set them.
+
+---
+
+## 3.5. Create or configure Foundry agents
+
+ClearMatch relies on two Microsoft Foundry agents for the reconciliation and
+explanation logic. You can create them via the portal or programmatically using
+the Foundry REST API. The agents are not provisioned automatically by the
+Static Web App.
+
+### Portal (GUI)
+1. Open the Azure portal and navigate to your Foundry instance.
+2. Select your project, then go to **Agents ➜ + New agent**.
+3. Name the agents `clearmatch-reconcile-agent` and
+   `clearmatch-explain-agent`.
+4. Choose a model deployment (e.g. `deepseek-v3.2-clearmatch` or any Azure
+   OpenAI deployment) and supply a prompt that implements the behavior
+   described in the repository README.
+   - **Reconcile**: join `payroll`/`trustee` arrays, classify rows, return
+     JSON with `totalEmployees`, `matchRate`, and an `exceptions[]` list.
+   - **Explain**: accept one exception and return a 2–4 sentence plain-text
+     narrative; never change numbers.
+5. Save/deploy. Note the returned `endpoint` URL and API key for each agent.
+   Add those to the SWA application settings (e.g. `ReconcileAgentUrl`,
+   `ReconcileAgentKey`).
+
+### REST API (automation)
+If you prefer a scriptable path, call the Foundry API yourself. First obtain an
+access token (you may use the default management audience if the Foundry
+resource isn’t registered in AAD):
+
+```powershell
+# management token is usually fine
+$token = az account get-access-token |
+         ConvertFrom-Json | Select-Object -ExpandProperty accessToken
+```
+
+Then create each agent:
+
+```powershell
+$body = @"
+{
+  "name": "clearmatch-reconcile-agent",
+  "description": "Deterministic payroll/trustee reconciliation logic",
+  "project": "<your-project-id-or-name>",
+  "modelDeployment": "deepseek-v3.2-clearmatch",
+  "prompt": "...system prompt text...",
+  "schema": { /* JSON schema per README */ }
+}
+"@
+
+az rest \
+  --method POST \
+  --uri "https://<your-foundry-endpoint>/v1/agents" \
+  --headers "Authorization=Bearer $token" "Content-Type=application/json" \
+  --body $body
+```
+
+and similarly for `clearmatch-explain-agent` with a simpler prompt and
+`"responseFormat":"text"`.
+
+If you get a `invalid_resource` error, either re‑login with the appropriate
+scope:
+
+```powershell
+az login --scope https://foundry.azure.com//.default
+```
+
+or just use the management token shown earlier.  The response from each
+creation call will include the agent `endpoint` and `key` which you must store
+in your app settings.
+
+> Tip: you can also update or patch an existing agent via `az rest` with
+> `--method PATCH`.
+
+
+---
 
 ---
 
