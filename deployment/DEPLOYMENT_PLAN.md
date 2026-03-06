@@ -69,20 +69,24 @@ the Foundry REST API. The agents are not provisioned automatically by the
 Static Web App.
 
 ### Portal (GUI)
-1. Open the Azure portal and navigate to your Foundry instance.
-2. Select your project, then go to **Agents ➜ + New agent**.
-3. Name the agents `clearmatch-reconcile-agent` and
-   `clearmatch-explain-agent`.
-4. Choose a model deployment (e.g. `deepseek-v3.2-clearmatch` or any Azure
-   OpenAI deployment) and supply a prompt that implements the behavior
-   described in the repository README.
-   - **Reconcile**: join `payroll`/`trustee` arrays, classify rows, return
-     JSON with `totalEmployees`, `matchRate`, and an `exceptions[]` list.
-   - **Explain**: accept one exception and return a 2–4 sentence plain-text
-     narrative; never change numbers.
-5. Save/deploy. Note the returned `endpoint` URL and API key for each agent.
-   Add those to the SWA application settings (e.g. `ReconcileAgentUrl`,
-   `ReconcileAgentKey`).
+1. Sign in to the Azure portal and search for **Azure AI Foundry**.
+2. Select your Foundry resource (e.g., `mpf-clearmatch-openai`).
+3. Open the project (e.g., `mpf-clearmatch-openai-project`).
+4. Navigate to **Agents** in the left menu, then click **+ New agent**.
+5. For the **Reconcile Agent**:
+   - Name: `clearmatch-reconcile-agent`
+   - Description: Deterministic payroll/trustee reconciliation logic
+   - Model: Select `deepseek-v3.2-clearmatch` or your preferred deployment
+   - Prompt: "You are a JSON-output agent. Input: {\"payroll\": [...],\"trustee\": [...]}. For each payroll row, join on EmpId+Period, compare expected vs received ER/EE amounts within tolerance, classify as Matched/Underpay/Overpay/Missing/Mismatch, and emit a result object with totalEmployees, matchRate and exceptions[] according to the README schema."
+   - Response format: JSON with the schema from the README (totalEmployees, matchRate, exceptions array).
+6. Save the agent and note the **Endpoint URL** and **API Key** from the agent details.
+7. Repeat for the **Explain Agent**:
+   - Name: `clearmatch-explain-agent`
+   - Description: Generate a 2–4 sentence human explanation for a single exception object
+   - Model: Same as above
+   - Prompt: "You are given an exception record with employee, period, expected/received amounts and reason code. Produce a 2-4 sentence plain-text explanation. Do not change any numbers."
+   - Response format: Text
+8. Add the endpoints and keys to your Static Web App's application settings (e.g., `ReconcileAgentUrl`, `ReconcileAgentKey`, `ExplainAgentUrl`, `ExplainAgentKey`).
 
 ### REST API (automation)
 If you prefer a scriptable path, call the Foundry API yourself. First obtain an
