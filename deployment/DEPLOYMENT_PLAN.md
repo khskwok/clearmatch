@@ -148,19 +148,47 @@ in your app settings.
 
 ## 4. Deploy Code
 
+Before you deploy, it’s helpful to confirm whether the Static Web App already
+exists and is running. This lets you choose between a new deployment or a
+redeploy of an existing site.
+
+```powershell
+# check status of SWA
+az staticwebapp show --name mpf-clearmatch-swa --resource-group clearmatch-rg
+```
+
+- If the command returns JSON with details (see earlier examples), the app is
+  already deployed. You can force a redeploy by pushing a commit or running
+  `az staticwebapp upload ...` again; the existing resource will not be
+  recreated.
+- If the command fails with `ResourceNotFound`, the app hasn’t been created
+  yet and you should use `az staticwebapp create` as described in section 2
+  above.
+
 ### If using GitHub Actions
 
-- Commit and push your code to the designated branch (`main` or `master`).
-- The workflow created under `.github/workflows/` will build and deploy your app automatically.
-- Monitor the workflow run via the Actions tab in GitHub or the Deployment Center in Azure.
+1. Commit and push your code to the designated branch (`main` or `master`).
+   - If the SWA was already connected to the repo, this push will trigger the
+     existing workflow and redeploy the site.
+   - If you just created the SWA (via CLI or portal), the GitHub Actions
+     workflow is already in place; the initial push will deploy it.
+2. Monitor the workflow run via the Actions tab in GitHub or the Deployment
+   Center in Azure. A successful run means the site is live and “started”.
 
 ### Manual deployment
 
-- Use the CLI command (run from repo root):
+- To deploy or redeploy without Actions, run the CLI command from the repo
+  root:
   ```powershell
   az staticwebapp upload --name mpf-clearmatch-swa --resource-group clearmatch-rg --source .
   ```
-- Alternatively, use `swa deploy` from the Static Web Apps CLI once configured.
+  (This works whether the SWA already exists or is brand new.)
+- Alternatively, use `swa deploy` from the Static Web Apps CLI once
+  configured.
+
+After deployment, the app is automatically “started” and accessible at the
+hostname shown in the static web app’s overview page. No separate start
+command is required.
 
 ---
 
