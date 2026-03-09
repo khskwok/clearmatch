@@ -26,13 +26,17 @@ This document outlines the steps to deploy the ClearMatch Static Web App and its
      --name mpf-clearmatch-swa \
      --resource-group clearmatch-rg \
      --source . \
-     --location "East US" \
+     --location "westus2" \  # choose a supported region (eastus is not valid)
      --app-location "/" \
      --api-location "api" \
      --branch main \
      --output table
    ```
 
+   - **Region note:** not all Azure regions support Static Web Apps. Valid
+     locations include `westus2`, `centralus`, `eastus2`, `westeurope`, and
+     `eastasia`. Replace `--location` with one of those if you see a
+     `LocationNotAvailableForResourceType` error.
    - **Important:** the CLI expects to run from within a git repository that is
      connected to GitHub or Azure DevOps. When executed in a plain local folder
      it will fail with a message about needing a PAT (as seen earlier).
