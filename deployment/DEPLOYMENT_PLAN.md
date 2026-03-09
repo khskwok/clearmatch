@@ -189,7 +189,16 @@ az staticwebapp show --name mpf-clearmatch-swa --resource-group clearmatch-rg
 After deployment, the app is automatically “started” and accessible at the
 hostname shown in the static web app’s overview page. No separate start
 command is required.
+### Troubleshooting Deployment Issues
 
+- **Submodule Error in GitHub Actions**: If you encounter "fatal: No url found for submodule path 'clearmatch.worktrees/...' in .gitmodules", this indicates a git worktree was incorrectly added as a submodule. To fix:
+  1. Locally, stage the deletion of the problematic folder: `git rm -r clearmatch.worktrees/copilot-worktree-<date>`
+  2. Commit and push the change: `git commit -m "Remove problematic submodule"` then `git push origin main`
+  3. This will trigger a new deployment without the submodule.
+
+- **Region Not Supported**: Ensure you use a valid Static Web App region like `westus2` or `centralus`.
+
+- **GitHub Authentication**: If PAT is required, generate one with repo permissions and use it in the CLI command.
 ---
 
 ## 5. Testing
