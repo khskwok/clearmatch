@@ -45,12 +45,17 @@ function callAzureOpenAI(prompt) {
       let chunks = '';
       res.on('data', (d) => (chunks += d));
       res.on('end', () => {
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          let detail = chunks;
+          try { detail = JSON.parse(chunks); } catch (e) {}
+          return reject(new Error(`OpenAI API returned ${res.statusCode}: ${JSON.stringify(detail)}`));
+        }
         try {
           const json = JSON.parse(chunks);
           const text = json.choices?.[0]?.message?.content || 'No explanation generated.';
           resolve(text);
         } catch (e) {
-          reject(e);
+          reject(new Error(`Invalid OpenAI response: ${e.message} (${chunks})`));
         }
       });
     });
