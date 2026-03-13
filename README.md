@@ -193,6 +193,10 @@ ClearMatch is built as a thin, Git-deployable front end on top of reusable Micro
 - Azure Static Web Apps + Functions provide a simple way to ship a complete prototype with CI/CD from GitHub.
 - Microsoft Foundry agents are a good place to host “brains” that need to be reused across multiple applications.
 - Designing for “no-quota / limited-quota” scenarios up front avoids surprises late in the project.
+- Deployment gotchas to document:
+  - `DeploymentNotFound` means the OpenAI resource deployment name is wrong or not ready.
+  - App setting must exactly match OpenAI deployment name.
+  - Use Key Vault + managed identity for secret management, then map into SWA settings.
 
 ---
 

@@ -49,6 +49,12 @@ This document outlines the steps to deploy the ClearMatch Static Web App and its
 
 3. **Verify** the deployment in the Azure Portal: navigate to the Static Web App resource and note the default URL.
 
+4. **Verify OpenAI deployment** (if using Azure OpenAI backend):
+   - In Azure Portal, open the OpenAI resource (e.g. `clearmatch-openai`).
+   - Go to **Deployments** and ensure there is at least one `Running` deployment (e.g. `gpt-4o-mini` or `deepseek-v3.2-clearmatch`).
+   - If using `OpenAIDeployment` in app settings, this name must match exactly.
+   - If you see `DeploymentNotFound` in logs, update the SWA app setting and retry.
+
 ---
 
 ## 3. Configure Application Settings
