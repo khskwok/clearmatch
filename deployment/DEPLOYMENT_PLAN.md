@@ -53,8 +53,10 @@ This document outlines the steps to deploy the ClearMatch Static Web App and its
 
 ## 3. Configure Application Settings
 
+> This section assumes you have created (or will create) an Azure OpenAI resource first.
+
 1. In the Azure Portal, go to the Static Web App resource.
-2. Under **Configuration > Application settings**, add the following keys (values provided by your Azure OpenAI resource or other service):
+2. Under **Configuration > Application settings**, add the following keys (values provided by your Azure OpenAI resource):
    - `OpenAIEndpoint` – e.g. `https://<your-instance>.openai.azure.com/`
    - `OpenAIDeployment` – e.g. `gpt-4o-mini`
    - `OpenAIKey` – API key string
@@ -62,6 +64,36 @@ This document outlines the steps to deploy the ClearMatch Static Web App and its
 3. Save and restart the app if prompted.
 
 > 🔐 Do **not** commit secrets to source control; use the portal or CLI to set them.
+
+## 3.1. Create Azure OpenAI resource (if needed)
+
+1. In Azure Portal, click **Create a resource** → search `Azure OpenAI` → **Create**.
+2. Choose subscription, resource group (`clearmatch-rg`), name (e.g., `clearmatch-openai`), region (e.g., West US 2), pricing tier (`S0`).
+3. Complete create and deploy.
+4. In the OpenAI resource, go to **Deployments** and create a deployment (e.g., model `gpt-4o-mini`, name `gpt-4o-mini`).
+5. In **Keys and Endpoint**, copy the endpoint and one key.
+
+## 3.2. Set app settings via CLI
+
+Run from repository root (or any working folder):
+
+```powershell
+az staticwebapp appsettings set \
+  --name mpf-clearmatch-swa \
+  --resource-group clearmatch-rg \
+  --settings \
+    OpenAIEndpoint="https://<your-instance>.openai.azure.com/" \
+    OpenAIDeployment="gpt-4o-mini" \
+    OpenAIKey="<your-openai-key>"
+```
+
+Verify with:
+
+```powershell
+az staticwebapp appsettings list --name mpf-clearmatch-swa --resource-group clearmatch-rg
+```
+
+`properties` should list `OpenAIEndpoint`, `OpenAIDeployment`, `OpenAIKey`.
 
 ---
 
