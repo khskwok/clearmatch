@@ -341,7 +341,16 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ exception })
         });
-        if (!res.ok) throw new Error('Explain API error: ' + res.status);
+
+        if (!res.ok) {
+          let errorText = await res.text();
+          try {
+            const errJson = JSON.parse(errorText);
+            errorText = errJson.error || JSON.stringify(errJson);
+          } catch (e) {}
+          throw new Error(`Explain API error ${res.status}: ${errorText}`);
+        }
+
         const data = await res.json();
         explanationBlock.textContent = data.explanation || 'No explanation received.';
       } catch (err) {
