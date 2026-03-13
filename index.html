@@ -5,49 +5,194 @@
   <title>MPF ClearMatch</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; padding: 0; background: #f5f5f7; }
-    header { background: #004578; color: #fff; padding: 1rem 1.5rem; }
-    header h1 { margin: 0; font-size: 1.4rem; }
-    header p { margin: 0.25rem 0 0; font-size: 0.9rem; opacity: 0.9; }
-    main { padding: 1.5rem; max-width: 960px; margin: 0 auto; }
-    section { background: #fff; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-    h2 { margin-top: 0; font-size: 1.1rem; }
-    .upload-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
-    label { display: block; font-size: 0.9rem; margin-bottom: 0.25rem; font-weight: 600; }
-    input[type="file"] { width: 100%; }
-    button { background: #004578; color: #fff; border: none; border-radius: 4px; padding: 0.5rem 1rem; cursor: pointer; font-size: 0.95rem; }
-    button[disabled] { opacity: 0.5; cursor: default; }
-    .btn-secondary { background: #666; }
-    .status { font-size: 0.9rem; margin-top: 0.5rem; }
-    .status--ok { color: #107c10; }
-    .status--err { color: #a4262c; }
-    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.5rem; margin-top: 0.5rem; }
-    .card { background: #f3f2f1; border-radius: 6px; padding: 0.6rem 0.7rem; font-size: 0.85rem; }
-    .card-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: #605e5c; }
-    .card-value { font-size: 1.1rem; font-weight: 600; margin-top: 0.25rem; }
-    table { width: 100%; border-collapse: collapse; margin-top: 0.75rem; font-size: 0.85rem; }
-    th, td { padding: 0.4rem 0.5rem; border-bottom: 1px solid #e1dfdd; text-align: left; }
-    th { background: #f3f2f1; font-weight: 600; }
-    .badge { display: inline-block; padding: 0.1rem 0.4rem; border-radius: 999px; font-size: 0.75rem; }
-    .badge-Underpay { background: #fde7e9; color: #a4262c; }
-    .badge-Overpay { background: #fff4ce; color: #986f0b; }
-    .badge-Missing { background: #fff4ce; color: #986f0b; }
-    .badge-Late { background: #fff4ce; color: #986f0b; }
-    .badge-Matched { background: #dff6dd; color: #107c10; }
-    .explanation { margin-top: 0.5rem; padding: 0.5rem 0.6rem; border-left: 3px solid #004578; background: #f3f2f1; font-size: 0.85rem; white-space: pre-wrap; }
+    :root {
+      --surface: #ffffff;
+      --surface-alt: #f3f2f1;
+      --bg: #f3f2f1;
+      --brand: #0067b8;
+      --brand-contrast: #ffffff;
+      --text: #323130;
+      --text-muted: #605e5c;
+      --border: #d2d0ce;
+      --shadow: 0 8px 24px rgba(0,0,0,0.08);
+      --radius: 10px;
+      --font: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #f5f6f7 0%, #eef1f5 100%);
+      color: var(--text);
+      font-family: var(--font);
+      line-height: 1.5;
+    }
+
+    .shell {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 1rem 1.25rem 2rem;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, #004578, #0067b8);
+      color: #fff;
+      padding: 1.15rem 1.3rem;
+      box-shadow: var(--shadow);
+    }
+
+    .topbar .brand {
+      margin: 0;
+      font-size: 1.3rem;
+      font-weight: 700;
+    }
+
+    .topbar .tagline {
+      color: rgba(255,255,255,0.95);
+      margin-top: 0.35rem;
+      font-size: 0.9rem;
+      font-weight: 400;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .card h2 {
+      margin-top: 0;
+      font-size: 1.1rem;
+      color: var(--text);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 0.85rem;
+      margin-top: 0.75rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.35rem;
+      font-size: 0.86rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    input[type="file"] {
+      width: 100%;
+      border: 1px solid #c8c6c4;
+      border-radius: 6px;
+      padding: 0.5rem;
+      font-size: 0.9rem;
+      background: #fff;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-top: 0.95rem;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      padding: 0.62rem 1rem;
+      font-size: 0.94rem;
+      cursor: pointer;
+      transition: transform 0.14s ease, opacity 0.14s ease;
+    }
+
+    .btn-primary {
+      background: var(--brand);
+      color: var(--brand-contrast);
+    }
+
+    .btn-secondary {
+      background: #f3f2f1;
+      border: 1px solid #c8c6c4;
+      color: #252423;
+    }
+
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.55; cursor: default; }
+
+    .status { font-size: 0.9rem; margin-left: 0.3rem; }
+    .status--ok { color: #007a33; }
+    .status--err { color: #d13438; }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+      gap: 0.85rem;
+      margin-top: 0.75rem;
+    }
+
+    .metric {
+      background: var(--surface-alt);
+      border-radius: 8px;
+      border: 1px solid #e1dfdd;
+      padding: 0.7rem;
+      min-height: 86px;
+    }
+
+    .metric small { display: block; color: var(--text-muted); }
+    .metric strong { font-size: 1.25rem; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 0.85rem; }
+    th, td { text-align: left; padding: 0.55rem 0.6rem; border-bottom: 1px solid #e1dfdd; }
+    th { background: #f3f2f1; color: #605e5c; font-weight: 600; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      border-radius: 999px;
+      padding: 0.16rem 0.48rem;
+      font-size: 0.74rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+    .badge-Matched { color: #107c10; background: #dff6dd; }
+    .badge-Underpay { color: #a4262c; background: #fde7e9; }
+    .badge-Overpay,.badge-Missing,.badge-Late { color: #986f0b; background: #fff4ce; }
+
+    .box { border: 1px solid var(--border); background: var(--surface-alt); border-radius: 8px; padding: 0.85rem; margin-top: 0.75rem; }
+    .box h3 { margin-top: 0; font-size: 0.97rem; }
+
     .hidden { display: none; }
+
+    @media (max-width: 720px) { .topbar { flex-direction: column; align-items: flex-start; } }
   </style>
 </head>
 <body>
-  <header>
-    <h1>MPF ClearMatch</h1>
-    <p>GenAI‑powered MPF contribution reconciliation</p>
-  </header>
+  <div class="shell">
+    <div class="topbar">
+      <div>
+        <div class="brand">MPF ClearMatch</div>
+        <div class="tagline">Modern GenAI reconciliation for payroll + trustee contributions</div>
+      </div>
+      <div style="font-size:0.82rem; opacity:0.85;">Prototype stage</div>
+    </div>
 
-  <main>
-    <section>
-      <h2>1. Upload payroll & trustee files</h2>
-      <div class="upload-grid">
+    <div class="card">
+      <h2>Upload input files</h2>
+      <p style="color: var(--text-muted);">Choose your payroll and trustee CSV files. Reconciliation operates on Emp ID + Period matching and amount tolerance.</p>
+
+      <div class="grid-2">
         <div>
           <label for="payrollFile">Payroll CSV</label>
           <input type="file" id="payrollFile" accept=".csv" />
@@ -57,47 +202,41 @@
           <input type="file" id="trusteeFile" accept=".csv" />
         </div>
       </div>
-      <div style="margin-top: 0.75rem;">
-        <button id="reconcileBtn">Reconcile now</button>
+
+      <div class="actions">
+        <button id="reconcileBtn" class="btn btn-primary">Run reconciliation</button>
         <span id="reconcileStatus" class="status"></span>
       </div>
-    </section>
+    </div>
 
-    <section id="resultsSection" class="hidden">
-      <h2>2. Reconciliation results</h2>
-      <div class="summary-grid">
-        <div class="card">
-          <div class="card-title">Employees</div>
-          <div class="card-value" id="summaryEmployees">–</div>
-        </div>
-        <div class="card">
-          <div class="card-title">Match rate</div>
-          <div class="card-value" id="summaryMatchRate">–</div>
-        </div>
-        <div class="card">
-          <div class="card-title">Exceptions</div>
-          <div class="card-value" id="summaryExceptions">–</div>
-        </div>
+    <div id="resultsSection" class="card hidden">
+      <h2>Reconciliation summary</h2>
+      <div class="metrics">
+        <div class="metric"><small>Total employees</small><strong id="summaryEmployees">–</strong></div>
+        <div class="metric"><small>Match rate</small><strong id="summaryMatchRate">–</strong></div>
+        <div class="metric"><small>Exceptions</small><strong id="summaryExceptions">–</strong></div>
       </div>
 
-      <table id="exceptionsTable">
-        <thead>
-          <tr>
-            <th>Employee</th>
-            <th>Period</th>
-            <th>Issue</th>
-            <th>Expected ER/EE</th>
-            <th>Received ER/EE</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody id="exceptionsBody">
-        </tbody>
-      </table>
+      <div class="box">
+        <h3>Exceptions list</h3>
+        <table id="exceptionsTable">
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Period</th>
+              <th>Issue</th>
+              <th>Expected ER/EE</th>
+              <th>Received ER/EE</th>
+              <th>Explain</th>
+            </tr>
+          </thead>
+          <tbody id="exceptionsBody"></tbody>
+        </table>
+      </div>
 
-      <div id="explanationBlock" class="explanation hidden"></div>
-    </section>
-  </main>
+      <div id="explanationBlock" class="box hidden"></div>
+    </div>
+  </div>
 
   <script>
     const reconcileBtn = document.getElementById('reconcileBtn');
@@ -120,9 +259,7 @@
       return lines.slice(1).map(line => {
         const cols = line.split(',');
         const obj = {};
-        headers.forEach((h, i) => {
-          obj[h] = (cols[i] || '').trim();
-        });
+        headers.forEach((h, i) => obj[h] = (cols[i] || '').trim());
         return obj;
       });
     }
@@ -143,11 +280,7 @@
       resultsSection.classList.add('hidden');
 
       try {
-        const [payrollText, trusteeText] = await Promise.all([
-          payrollFile.text(),
-          trusteeFile.text()
-        ]);
-
+        const [payrollText, trusteeText] = await Promise.all([payrollFile.text(), trusteeFile.text()]);
         const payroll = parseCsv(payrollText);
         const trustee = parseCsv(trusteeText);
 
@@ -157,56 +290,35 @@
           body: JSON.stringify({ payroll, trustee })
         });
 
-        if (!res.ok) {
-          throw new Error('Reconcile API error: ' + res.status);
-        }
+        if (!res.ok) throw new Error('Reconcile API error: ' + res.status);
 
         const data = await res.json();
-        // Expecting: { matchRate, totalEmployees, exceptions: [...] }
         summaryEmployees.textContent = data.totalEmployees ?? '–';
-        summaryMatchRate.textContent = data.matchRate != null
-          ? Math.round(data.matchRate * 100) + '%'
-          : '–';
+        summaryMatchRate.textContent = data.matchRate != null ? Math.round(data.matchRate * 100) + '%' : '–';
         summaryExceptions.textContent = data.exceptions ? data.exceptions.length : 0;
 
-        // Build table
         exceptionsBody.innerHTML = '';
-        (data.exceptions || []).forEach((ex, idx) => {
+        (data.exceptions || []).forEach(ex => {
           const tr = document.createElement('tr');
 
-          const tdEmp = document.createElement('td');
-          tdEmp.textContent = ex.empName || ex.empId || '–';
+          const badge = document.createElement('span');
+          badge.textContent = ex.issueType || ex.status || 'Exception';
+          badge.className = 'badge badge-' + (ex.issueType || ex.status || 'Exception');
 
-          const tdPeriod = document.createElement('td');
-          tdPeriod.textContent = ex.period || '–';
+          const expected = `${ex.expectedER ?? '-'} / ${ex.expectedEE ?? '-'}`;
+          const received = `${ex.receivedER ?? '-'} / ${ex.receivedEE ?? '-'}`;
 
-          const tdIssue = document.createElement('td');
-          const spanIssue = document.createElement('span');
-          spanIssue.textContent = ex.issueType || ex.status || 'Exception';
-          spanIssue.className = 'badge badge-' + (ex.issueType || ex.status || 'Exception');
-          tdIssue.appendChild(spanIssue);
+          tr.innerHTML = `
+            <td>${ex.empName || ex.empId || '–'}</td>
+            <td>${ex.period || '–'}</td>
+            <td></td>
+            <td>${expected}</td>
+            <td>${received}</td>
+            <td><button type="button" class="btn btn-secondary" data-explain>Explain</button></td>
+          `;
 
-          const tdExpected = document.createElement('td');
-          tdExpected.textContent = `${ex.expectedER ?? '-'} / ${ex.expectedEE ?? '-'}`;
-
-          const tdReceived = document.createElement('td');
-          tdReceived.textContent = `${ex.receivedER ?? '-'} / ${ex.receivedEE ?? '-'}`;
-
-          const tdAction = document.createElement('td');
-          const btnExplain = document.createElement('button');
-          btnExplain.textContent = 'Explain';
-          btnExplain.className = 'btn-secondary';
-          btnExplain.type = 'button';
-          btnExplain.onclick = () => explainException(ex);
-          tdAction.appendChild(btnExplain);
-
-          tr.appendChild(tdEmp);
-          tr.appendChild(tdPeriod);
-          tr.appendChild(tdIssue);
-          tr.appendChild(tdExpected);
-          tr.appendChild(tdReceived);
-          tr.appendChild(tdAction);
-
+          tr.querySelector('td:nth-child(3)').appendChild(badge);
+          tr.querySelector('[data-explain]').addEventListener('click', () => explainException(ex));
           exceptionsBody.appendChild(tr);
         });
 
@@ -223,18 +335,13 @@
     async function explainException(exception) {
       explanationBlock.classList.remove('hidden');
       explanationBlock.textContent = 'Generating explanation…';
-
       try {
         const res = await fetch('/api/explain', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ exception })
         });
-
-        if (!res.ok) {
-          throw new Error('Explain API error: ' + res.status);
-        }
-
+        if (!res.ok) throw new Error('Explain API error: ' + res.status);
         const data = await res.json();
         explanationBlock.textContent = data.explanation || 'No explanation received.';
       } catch (err) {
