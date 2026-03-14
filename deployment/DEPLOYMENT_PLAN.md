@@ -17,14 +17,14 @@ This document outlines the steps to deploy the ClearMatch Static Web App and its
 
 1. **Resource group** (if not already created):
    ```powershell
-   az group create --name clearmatch-rg --location "East US"
+  az group create --name <resourceGroup> --location "<region>"
    ```
 
 2. **Static Web App** (replace `<appName>` with a globally unique name):
    ```powershell
    az staticwebapp create \
-     --name mpf-clearmatch-swa \
-     --resource-group clearmatch-rg \
+    --name <appName> \
+    --resource-group <resourceGroup> \
      --source . \
      --location "westus2" \  # choose a supported region (eastus is not valid)
      --app-location "/" \
@@ -50,7 +50,7 @@ This document outlines the steps to deploy the ClearMatch Static Web App and its
 3. **Verify** the deployment in the Azure Portal: navigate to the Static Web App resource and note the default URL.
 
 4. **Verify OpenAI deployment** (if using Azure OpenAI backend):
-   - In Azure Portal, open the OpenAI resource (e.g. `clearmatch-openai`).
+  - In Azure Portal, open the OpenAI resource (e.g. `<openaiResourceName>`).
   - Go to **Deployments** and ensure there is at least one `Running` deployment (e.g. `gpt-4o`).
    - If using `OpenAIDeployment` in app settings, this name must match exactly.
    - If you see `DeploymentNotFound` in logs, update the SWA app setting and retry.
@@ -74,7 +74,7 @@ This document outlines the steps to deploy the ClearMatch Static Web App and its
 ## 3.1. Create Azure OpenAI resource (if needed)
 
 1. In Azure Portal, click **Create a resource** → search `Azure OpenAI` → **Create**.
-2. Choose subscription, resource group (`clearmatch-rg`), name (e.g., `clearmatch-openai`), region (e.g., West US 2), pricing tier (`S0`).
+2. Choose subscription, resource group (`<resourceGroup>`), name (e.g., `<openaiResourceName>`), region (e.g., West US 2), pricing tier (`S0`).
 3. Complete create and deploy.
 4. In the OpenAI resource, go to **Deployments** and create a deployment (e.g., model `gpt-4o`, name `gpt-4o`).
 5. In **Keys and Endpoint**, copy the endpoint and one key.
@@ -85,8 +85,8 @@ Run from repository root (or any working folder):
 
 ```powershell
 az staticwebapp appsettings set \
-  --name mpf-clearmatch-swa \
-  --resource-group clearmatch-rg \
+  --name <appName> \
+  --resource-group <resourceGroup> \
   --settings \
     OpenAIEndpoint="https://<your-instance>.openai.azure.com/" \
     OpenAIDeployment="gpt-4o" \
@@ -96,7 +96,7 @@ az staticwebapp appsettings set \
 Verify with:
 
 ```powershell
-az staticwebapp appsettings list --name mpf-clearmatch-swa --resource-group clearmatch-rg
+az staticwebapp appsettings list --name <appName> --resource-group <resourceGroup>
 ```
 
 `properties` should list `OpenAIEndpoint`, `OpenAIDeployment`, `OpenAIKey`.
@@ -112,8 +112,8 @@ Static Web App.
 
 ### Portal (GUI)
 1. Sign in to the Azure portal and search for **Azure AI Foundry**.
-2. Select your Foundry resource (e.g., `mpf-clearmatch-openai`).
-3. Open the project (e.g., `mpf-clearmatch-openai-project`).
+2. Select your Foundry resource (e.g., `<foundryResourceName>`).
+3. Open the project (e.g., `<foundryProjectName>`).
 4. Navigate to **Agents** in the left menu, then click **+ New agent**.
 5. For the **Reconcile Agent**:
    - Name: `clearmatch-reconcile-agent`
@@ -192,7 +192,7 @@ redeploy of an existing site.
 
 ```powershell
 # check status of SWA
-az staticwebapp show --name mpf-clearmatch-swa --resource-group clearmatch-rg
+az staticwebapp show --name <appName> --resource-group <resourceGroup>
 ```
 
 - If the command returns JSON with details (see earlier examples), the app is
@@ -218,7 +218,7 @@ az staticwebapp show --name mpf-clearmatch-swa --resource-group clearmatch-rg
 - To deploy or redeploy without Actions, run the CLI command from the repo
   root:
   ```powershell
-  az staticwebapp upload --name mpf-clearmatch-swa --resource-group clearmatch-rg --source .
+  az staticwebapp upload --name <appName> --resource-group <resourceGroup> --source .
   ```
   (This works whether the SWA already exists or is brand new.)
 - Alternatively, use `swa deploy` from the Static Web Apps CLI once
@@ -232,7 +232,7 @@ command is required.
 
 ## 5. Testing
 
-- Browse to the app URL (e.g. `https://mpf-clearmatch-swa.azurestaticapps.net`).
+- Browse to the app URL (e.g. `https://<appName>.azurestaticapps.net`).
 - Use the sample CSV files in `deployment/payroll.csv` and `deployment/trustee.csv` as test inputs.
 - Upload sample payroll and trustee files to ensure reconciliation works.
 - Test API endpoints directly if needed:
@@ -251,12 +251,12 @@ To remove all deployed resources:
 
 1. **Delete the Static Web App**:
    ```powershell
-   az staticwebapp delete --name mpf-clearmatch-swa --resource-group clearmatch-rg --yes
+  az staticwebapp delete --name <appName> --resource-group <resourceGroup> --yes
    ```
 
 2. **Delete the resource group** (if no other resources exist):
    ```powershell
-   az group delete --name clearmatch-rg --yes --no-wait
+  az group delete --name <resourceGroup> --yes --no-wait
    ```
 
 3. Optionally, remove local build artifacts or temp files.
@@ -272,36 +272,3 @@ To remove all deployed resources:
 - Manage secrets through Azure Key Vault or environment settings as needs evolve.
 
 ---
-
-## 8. Actual Deployment Details
-
-This section documents the specific values and configurations used in the successful deployment of ClearMatch.
-
-### Azure Resources
-- **Resource Group**: `clearmatch-rg` (Location: East US)
-- **Static Web App**: `mpf-clearmatch-swa` (Location: West US 2, URL: `https://salmon-smoke-05d320f1e.6.azurestaticapps.net`)
-- **Azure OpenAI Resource**: `khskw-mm8sjfq1-swedencentral` (Resource Group: `rg-mpf-clearmatch`, Location: Sweden Central)
-  - Endpoint: `https://khskw-mm8sjfq1-swedencentral.cognitiveservices.azure.com/`
-  - Deployment: `gpt-4o`
-  - API Key: Configured in SWA app settings (redacted for security)
-
-### Application Settings
-- `OpenAIEndpoint`: `https://khskw-mm8sjfq1-swedencentral.cognitiveservices.azure.com/`
-- `OpenAIDeployment`: `gpt-4o`
-- `OpenAIKey`: [API key provided during setup]
-
-### GitHub Integration
-- Repository: `https://github.com/khskwok/clearmatch`
-- Branch: `main`
-- Build Status: Successful (GitHub Actions triggered on push)
-
-### Testing Results
-- **Reconcile API**: Functional, returns correct match rate and exceptions.
-- **Explain API**: Functional, generates AI explanations using Azure OpenAI.
-- **Frontend**: Accessible and interactive.
-
-### Notes
-- Foundry agents were not implemented; reconciliation uses direct code logic for auditability.
-- Secrets were removed from git history to comply with GitHub's push protection.
-- Deployment completed on March 14, 2026.
-- Resources cleaned up on March 14, 2026 to prevent extra costs: SWA deleted, OpenAI resource deleted.
