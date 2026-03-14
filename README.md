@@ -24,7 +24,7 @@ It then:
 - Joins records by employee and period.
 - Detects mismatches: match, underpay, overpay, missing, and general mismatch.
 - Calculates match rate and basic KPIs.
-- Generates human-readable explanations for each exception, including likely root cause and recommended next action.
+- Generates human-readable explanations (via AI) for each exception, including likely root cause and recommended next action.
 
 You can ask it things like “Show me who is underpaid this month and why,” and get a prioritized exception list with explanations without building new spreadsheets.
 
@@ -43,13 +43,11 @@ ClearMatch is built as a thin, Git-deployable front end with serverless APIs:
     - Triggering explanation generation per exception.
   - Backend Functions:
     - `/api/reconcile` – performs deterministic reconciliation logic.
-    - `/api/explain` – returns explanation text for exceptions.
+    - `/api/explain` – generates AI explanations via Azure OpenAI.
 
 - **AI Integration**
-  - Uses Microsoft Foundry configuration (`FoundryEndpoint`, `FoundryKey`) when enabled.
-  - Target model for model-assisted explanations: `gpt-4o`.
-  - Explanation endpoint supports deterministic fallback behavior for reliability.
-  - Reconciliation is handled directly in code for auditability.
+  - Uses Azure OpenAI for explanations (model deployment: `DeepSeek-V3.2`).
+  - No Foundry agents in current implementation; reconciliation is handled directly in code for auditability.
 
 ### Architecture Diagram
 
@@ -58,12 +56,12 @@ ClearMatch is built as a thin, Git-deployable front end with serverless APIs:
                      |
                      +--> [API Functions (/api/reconcile, /api/explain)]
                           |
-                          +--> [Microsoft Foundry (optional/external explanation service)]
+                          +--> [Azure OpenAI Service (DeepSeek-V3.2)]
 ```
 
 - **Frontend**: Single-page app for file uploads and results display.
 - **Backend**: Serverless functions on Azure SWA.
-- **AI Layer**: Foundry-backed explanation path with deterministic fallback.
+- **AI Layer**: Azure OpenAI for generating explanations.
 - **Deployment**: GitHub Actions for CI/CD to Azure SWA.
 
 ---
@@ -102,25 +100,32 @@ ClearMatch is built as a thin, Git-deployable front end with serverless APIs:
 
 - Node.js Azure Function under `/api/explain`.
 - Accepts a single `exception` object from the frontend.
-- Builds an explanation using structured exception fields.
-- Current production behavior is deterministic output for reliability.
-- Foundry integration settings (`FoundryEndpoint`, `FoundryKey`) remain available for model-assisted explanations.
+- Builds a prompt that includes:
+  - Employee ID/name, period.
+  - Expected and received ER/EE.
+  - Issue type and reason code.
+- Calls Azure OpenAI using Chat Completions.
+- Returns a 2–4 sentence explanation:
+  - What is wrong.
+  - Likely operational cause (e.g., missing trustee line, wrong salary, late remittance).
+  - Suggested next action (e.g., contact employer to collect HKD X underpayment).
 
 ### Infrastructure
 
 - GitHub repo with:
   - `/` – frontend app.
   - `/api` – SWA Functions (`reconcile.js`, `explain.js`).
+  - `/tools` – optional scripts to create/update Foundry agents and clean up.
 - Azure Static Web Apps for hosting and CI/CD.
-- Azure Key Vault for secrets.
+- Azure OpenAI for AI explanations (model: DeepSeek-V3.2).
 
 ---
 
 ## Challenges we ran into
 
-- **Non-transparent Azure OpenAI / model policy constraints**
-  - Model and endpoint constraints changed during implementation, which impacted explanation integration paths.
-  - We designed the app so it can run with deterministic explanation output when external model configuration is unavailable.
+- **Non-transparent Azure OpenAI resource policy**
+  - The subscription's OpenAI resource policies are not clearly documented, making it difficult to know what models are available for testing.
+  - We designed the app so it could run with a **mock explanation** backend until quota or an alternative model (via Foundry) was available.
 
 - **Aligning data formats**
   - Employer and trustee files use different headers and formats.
@@ -130,60 +135,74 @@ ClearMatch is built as a thin, Git-deployable front end with serverless APIs:
   - Simple equality checks are not enough—had to handle tolerance, missing records, and multiple small differences in a clear, deterministic way.
   - The classification logic had to be simple enough to explain but strict enough for audit.
 
+- **Avoiding confusing AI output**
+  - The explanation model must not invent numbers or change amounts.
+  - We enforced tight system prompts and strict grounding in the numeric fields returned by `reconcile` to keep explanations faithful.
+
 - **Balancing logic vs AI**
   - Pure AI reconciliation would have been opaque for audit and regulatory review.
-  - A hybrid design (deterministic math + explanation layer) gave better transparency and usability.
+  - A hybrid design (deterministic math + AI explanations) gave better transparency and usability.
 
 ---
 
 ## Accomplishments we’re proud of
 
 - **End-to-end MPF reconciliation flow**
-  - From two CSV uploads -> reconciliation -> exception list -> explanation per case, all in a small, self-contained app.
+  - From two CSV uploads → reconciliation → exception list → explanation per case, all in a small, self-contained app.
 
-- **Deterministic logic + explainability**
+- **Deterministic logic + AI**
   - Clean separation between:
     - Deterministic reconciliation (for auditability).
-    - Human-readable narratives (for operations handover).
+    - AI-generated narratives (for readability and operations handover).
 
 - **Demo-ready UX**
   - Non-technical stakeholders can:
     - Upload sample files.
     - See overall match rate and issue counts.
-    - Drill into specific employees and read a clear explanation.
+    - Drill into specific employees and instantly read a clear explanation.
 
-- **Resilient design**
-  - The system stays functional even when external model services are unavailable.
+- **Mock-first design**
+  - Even without Azure OpenAI/Foundry quota, the system can run with rule-based text explanations, making it safe to demo in constrained environments.
+
+- **Agent reusability**
+  - The Reconcile and Explain agents are reusable from other services, batch jobs, or future UIs via Foundry APIs, not just from this Static Web App.
 
 ---
 
 ## What we learned
 
-- A small, well-defined domain (MPF reconciliation) is a great fit for deterministic rules plus an explanation layer.
-- Tight grounding in numeric fields is critical for faithful explanations.
+- A small, well-defined domain (MPF reconciliation) is a great fit for combining deterministic rules with AI summarization.
+- Tight prompts and explicit field lists are critical for keeping explanations numerically faithful.
 - Azure Static Web Apps + Functions provide a simple way to ship a complete prototype with CI/CD from GitHub.
+- Microsoft Foundry agents are a good place to host “brains” that need to be reused across multiple applications.
+- Designing for “no-quota / limited-quota” scenarios up front avoids surprises late in the project.
 - Deployment gotchas to document:
-  - Invalid SWA token causes GitHub Action deploy failures.
-  - Key Vault reference formatting can be truncated by local shell parsing on Windows.
-  - Keep one active SWA workflow per environment.
+  - `DeploymentNotFound` means the OpenAI resource deployment name is wrong or not ready.
+  - App setting must exactly match OpenAI deployment name.
+  - Use Key Vault + managed identity for secret management, then map into SWA settings.
 
 ---
 
 ## What’s next for ClearMatch
 
-- **Configurable explanation mode**
-  - Support deterministic, model-assisted, and hybrid modes behind a simple app setting.
+- **Quota-aware model deployment**
+  - Use Foundry model deployments (e.g. DeepSeek-V3.2 or GPT-5-mini), and tune prompts for MPF-specific language once quota and model availability are confirmed.
 
 - **Richer analytics**
   - Dashboards for:
     - Underpay/overpay trends by employer over time.
-    - Top recurring issue types.
+    - Top recurring issue types (e.g., late payments vs data errors).
 
 - **Workflow integration**
-  - Auto-create tasks/tickets when exceptions exceed configured thresholds.
+  - Auto-create tasks/tickets when exceptions exceed certain thresholds (e.g., large underpayment for a key employer).
+  - Integrate with existing case management tools.
 
 - **Multi-scheme support**
-  - Extend beyond MPF to additional pension or benefits schemes with different contribution rules.
+  - Extend beyond MPF to handle other pension or benefits schemes with different contribution rules.
 
-- **Template packaging**
-  - Publish a reusable template with sample data, deterministic APIs, and Azure deployment automation.
+- **Open sourcing**
+  - Publish a template repo with:
+    - Sample anonymized MPF data.
+    - Reconciliation functions.
+    - Agent definitions and deployment scripts for Foundry.
+    - Optional Azure OpenAI integration path, so operations teams can adapt it quickly.
