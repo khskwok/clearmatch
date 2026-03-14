@@ -217,15 +217,27 @@ az staticwebapp show --name mpf-clearmatch-swa --resource-group clearmatch-rg
   yet and you should use `az staticwebapp create` as described in section 2
   above.
 
-### If using GitHub Actions
+### If using GitHub Actions (recommended)
 
-1. Commit and push your code to the designated branch (`main` or `master`).
-   - If the SWA was already connected to the repo, this push will trigger the
-     existing workflow and redeploy the site.
-   - If you just created the SWA (via CLI or portal), the GitHub Actions
-     workflow is already in place; the initial push will deploy it.
-2. Monitor the workflow run via the Actions tab in GitHub or the Deployment
-   Center in Azure. A successful run means the site is live and “started”.
+1. Ensure the repository is hosted on GitHub and contains the ClearMatch code.
+   - If you are working locally and have not yet pushed, create a GitHub repo and then run:
+     ```powershell
+     git remote add origin https://github.com/<your-org-or-user>/<repo-name>.git
+     git push -u origin main
+     ```
+
+2. Make sure the GitHub repository includes the existing workflow file at:
+   `.github/workflows/azure-static-web-apps-*.yml` (already present in this repo).
+
+3. Ensure the required GitHub secret exists:
+   - `AZURE_STATIC_WEB_APPS_API_TOKEN_SALMON_SMOKE_05D320F1E` should be set in the repo’s Secrets.
+     This token is required for the workflow to deploy to your Static Web App.
+
+4. Push changes to `main` (or the configured branch).
+   - The workflow will automatically run and deploy the app.
+
+5. Monitor the workflow run in the GitHub Actions UI to confirm it succeeds.
+   - A successful run means the Static Web App and API are deployed and accessible.
 
 ### Manual deployment
 
