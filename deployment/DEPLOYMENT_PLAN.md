@@ -304,3 +304,4 @@ This section documents the specific values and configurations used in the succes
 - Foundry agents were not implemented; reconciliation uses direct code logic for auditability.
 - Secrets were removed from git history to comply with GitHub's push protection.
 - Deployment completed on March 14, 2026.
+- Resources cleaned up on March 14, 2026 to prevent extra costs: SWA deleted, OpenAI resource deleted.
