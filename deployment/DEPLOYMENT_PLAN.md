@@ -8,6 +8,7 @@ It is optimized for one workflow: push to GitHub `main`, deploy via Azure Static
 ## 1. Current Target Environment
 
 - Resource Group: `clearmatch-rg` (`eastus`)
+- Shared Key Vault Resource Group: `rg-mpf-clearmatch`
 - Static Web App: `mpf-clearmatch-swa` (`West US 2`)
 - Production URL: `https://brave-beach-048a8081e.2.azurestaticapps.net`
 - API folder: `api`
@@ -218,6 +219,6 @@ Also clean GitHub repository secrets related to this environment.
 ## 8. Operations Notes
 
 - Prefer GitHub Actions deployment over local SWA CLI for release validation.
-- Keep only one active SWA workflow for this environment.
+- Keep only one active SWA workflow for this environment (salmon-smoke).
 - Store secrets in Key Vault and reference them from SWA settings.
 - If app behavior changes, update this file in the same PR as code changes.

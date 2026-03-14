@@ -1,98 +1,188 @@
 # ClearMatch MPF Reconciliation Assistant
 
-ClearMatch is a prototype web app for MPF reconciliation.
-It compares payroll and trustee contribution records, flags exceptions, and returns plain-language explanations to reduce manual spreadsheet investigation.
+ClearMatch is an AI-assisted MPF reconciliation prototype that automatically compares employer payroll reports with trustee records, flags mismatches, and explains what went wrong in plain language. It is designed to cut manual spreadsheet work for operations teams and provide a clear, auditable view of contribution issues across employers and periods.
 
 ---
 
-## What It Does
+## Inspiration
 
-ClearMatch accepts two datasets:
+MPF reconciliation today is often a painful, manual process—operations staff download CSVs from multiple systems, build VLOOKUP-heavy spreadsheets, and spend hours investigating small numeric mismatches. Small errors (like a few dollars underpaid) can slip through, while obvious systemic issues take days to detect.
 
-- Payroll: expected ER/EE contribution per employee and period
-- Trustee: received ER/EE contribution per employee and period
+ClearMatch was inspired by this workflow friction: we wanted to show how a small web app plus an AI explanation layer can turn raw contribution files into a structured exception list and easy-to-read narratives for each case. The goal is to move from “spreadsheet archaeology” to a proactive, explainable reconciliation assistant.
+
+---
+
+## What it does
+
+ClearMatch takes two data sources:
+
+- **Payroll file** – expected MPF contributions per employee and period (ER/EE amounts).
+- **Trustee file** – actual contributions received and posted for the same employees/periods.
 
 It then:
 
-- Matches records by `EmpId + Period`
-- Classifies issues (`Matched`, `Underpay`, `Overpay`, `Missing`, `Mismatch`)
-- Returns summary KPIs (`totalEmployees`, `matchRate`, `exceptions[]`)
-- Generates explanation text for each exception via `/api/explain`
+- Joins records by employee and period.
+- Detects mismatches: match, underpay, overpay, missing, and general mismatch.
+- Calculates match rate and basic KPIs.
+- Generates human-readable explanations for each exception, including likely root cause and recommended next action.
+
+You can ask it things like “Show me who is underpaid this month and why,” and get a prioritized exception list with explanations without building new spreadsheets.
 
 ---
 
-## Architecture
+## Architecture overview
 
-- Frontend: static SPA hosted on Azure Static Web Apps
-- API: Azure Functions (managed by SWA)
-  - `/api/reconcile`: deterministic reconciliation logic
-  - `/api/explain`: explanation endpoint for exception narratives
-- CI/CD: GitHub Actions on `main`
+ClearMatch is built as a thin, Git-deployable front end with serverless APIs:
 
-Production URL:
+- **UI and API**
+  - Azure Static Web App (`mpf-clearmatch-swa`).
+  - Frontend (SPA) for:
+    - Uploading payroll and trustee CSVs.
+    - Configuring thresholds (e.g., tolerance for small differences).
+    - Viewing a table of reconciled records and exceptions.
+    - Triggering explanation generation per exception.
+  - Backend Functions:
+    - `/api/reconcile` – performs deterministic reconciliation logic.
+    - `/api/explain` – returns explanation text for exceptions.
 
-- `https://brave-beach-048a8081e.2.azurestaticapps.net`
+- **AI Integration**
+  - Uses Microsoft Foundry configuration (`FoundryEndpoint`, `FoundryKey`) when enabled.
+  - Explanation endpoint supports deterministic fallback behavior for reliability.
+  - Reconciliation is handled directly in code for auditability.
 
----
+### Architecture Diagram
 
-## Repository Structure
-
-- `index.html`: frontend UI
-- `api/reconcile.js`: reconciliation API
-- `api/explain.js`: explanation API
-- `deployment/DEPLOYMENT_PLAN.md`: deployment and operations runbook
-- `deployment/payroll.csv`: sample test input
-- `deployment/trustee.csv`: sample test input
-
----
-
-## Current Deployment Model
-
-- Deploys from GitHub `main` branch
-- Uses workflow:
-  - `.github/workflows/azure-static-web-apps-salmon-smoke-05d320f1e.yml`
-- Uses SWA deployment token secret:
-  - `AZURE_STATIC_WEB_APPS_API_TOKEN_SALMON_SMOKE_05D320F1E`
-
----
-
-## Running and Testing
-
-### Cloud Validation
-
-Use the deployed app URL and test endpoints:
-
-```http
-POST /api/reconcile
-POST /api/explain
+```
+[Frontend (SPA)] --> [Azure Static Web App]
+                     |
+                     +--> [API Functions (/api/reconcile, /api/explain)]
+                          |
+                          +--> [Microsoft Foundry (optional/external explanation service)]
 ```
 
-### Sample Data
-
-Use:
-
-- `deployment/payroll.csv`
-- `deployment/trustee.csv`
+- **Frontend**: Single-page app for file uploads and results display.
+- **Backend**: Serverless functions on Azure SWA.
+- **AI Layer**: Foundry-backed explanation path with deterministic fallback.
+- **Deployment**: GitHub Actions for CI/CD to Azure SWA.
 
 ---
 
-## Notes on Explanations
+## How we built it
 
-The prototype prioritizes reliable explanation output for demos and validation.
-When integrating external model services (for example Foundry), keep deterministic fallback behavior so `/api/explain` remains available even during external service or configuration issues.
+### Frontend
+
+- Single-page web UI for:
+  - Uploading payroll and trustee CSVs.
+  - Configuring thresholds (e.g., tolerance for small differences).
+  - Viewing a table of reconciled records and exceptions.
+  - Triggering explanation generation per exception.
+- Uses REST calls to the SWA API endpoints (`/api/reconcile`, `/api/explain`).
+
+### Reconciliation API (`reconcile`)
+
+- Node.js Azure Function under `/api/reconcile`.
+- Parses JSON payload with two arrays: `payroll` and `trustee`.
+- Indexes trustee data by `EmpId + Period`.
+- For each payroll row:
+  - Finds matching trustee record (if any).
+  - Compares expected vs received ER/EE amounts within a tolerance.
+  - Classifies each row as:
+    - `Matched`
+    - `Underpay`
+    - `Overpay`
+    - `Missing` (no trustee record)
+    - `Mismatch` (other discrepancies)
+- Returns:
+  - `totalEmployees`
+  - `matchRate`
+  - `exceptions[]` with fields like `empId`, `empName`, `period`, `expectedER/EE`, `receivedER/EE`, `issueType`, `reasonCode`.
+
+### Explanation API (`explain`)
+
+- Node.js Azure Function under `/api/explain`.
+- Accepts a single `exception` object from the frontend.
+- Builds an explanation using structured exception fields.
+- Current production behavior is deterministic output for reliability.
+- Foundry integration settings (`FoundryEndpoint`, `FoundryKey`) remain available for model-assisted explanations.
+
+### Infrastructure
+
+- GitHub repo with:
+  - `/` – frontend app.
+  - `/api` – SWA Functions (`reconcile.js`, `explain.js`).
+- Azure Static Web Apps for hosting and CI/CD.
+- Azure Key Vault for secrets.
 
 ---
 
-## Security and Secrets
+## Challenges we ran into
 
-- Do not commit secrets to git.
-- Store sensitive values in Azure Key Vault.
-- Reference secrets from SWA application settings.
+- **Non-transparent Azure OpenAI / model policy constraints**
+  - Model and endpoint constraints changed during implementation, which impacted explanation integration paths.
+  - We designed the app so it can run with deterministic explanation output when external model configuration is unavailable.
+
+- **Aligning data formats**
+  - Employer and trustee files use different headers and formats.
+  - We needed a normalization layer (e.g., `EmpId` vs `empId`, `Period` vs `period`, varying ER/EE naming).
+
+- **Robust reconciliation rules**
+  - Simple equality checks are not enough—had to handle tolerance, missing records, and multiple small differences in a clear, deterministic way.
+  - The classification logic had to be simple enough to explain but strict enough for audit.
+
+- **Balancing logic vs AI**
+  - Pure AI reconciliation would have been opaque for audit and regulatory review.
+  - A hybrid design (deterministic math + explanation layer) gave better transparency and usability.
 
 ---
 
-## Next Improvements
+## Accomplishments we’re proud of
 
-- Add structured API tests for `/api/reconcile` and `/api/explain`
-- Add richer summary analytics (trend and employer-level views)
-- Add configurable explanation mode (deterministic, model-assisted, hybrid)
+- **End-to-end MPF reconciliation flow**
+  - From two CSV uploads -> reconciliation -> exception list -> explanation per case, all in a small, self-contained app.
+
+- **Deterministic logic + explainability**
+  - Clean separation between:
+    - Deterministic reconciliation (for auditability).
+    - Human-readable narratives (for operations handover).
+
+- **Demo-ready UX**
+  - Non-technical stakeholders can:
+    - Upload sample files.
+    - See overall match rate and issue counts.
+    - Drill into specific employees and read a clear explanation.
+
+- **Resilient design**
+  - The system stays functional even when external model services are unavailable.
+
+---
+
+## What we learned
+
+- A small, well-defined domain (MPF reconciliation) is a great fit for deterministic rules plus an explanation layer.
+- Tight grounding in numeric fields is critical for faithful explanations.
+- Azure Static Web Apps + Functions provide a simple way to ship a complete prototype with CI/CD from GitHub.
+- Deployment gotchas to document:
+  - Invalid SWA token causes GitHub Action deploy failures.
+  - Key Vault reference formatting can be truncated by local shell parsing on Windows.
+  - Keep one active SWA workflow per environment.
+
+---
+
+## What’s next for ClearMatch
+
+- **Configurable explanation mode**
+  - Support deterministic, model-assisted, and hybrid modes behind a simple app setting.
+
+- **Richer analytics**
+  - Dashboards for:
+    - Underpay/overpay trends by employer over time.
+    - Top recurring issue types.
+
+- **Workflow integration**
+  - Auto-create tasks/tickets when exceptions exceed configured thresholds.
+
+- **Multi-scheme support**
+  - Extend beyond MPF to additional pension or benefits schemes with different contribution rules.
+
+- **Template packaging**
+  - Publish a reusable template with sample data, deterministic APIs, and Azure deployment automation.
