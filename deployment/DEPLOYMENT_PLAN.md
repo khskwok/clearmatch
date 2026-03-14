@@ -51,7 +51,7 @@ This document outlines the steps to deploy the ClearMatch Static Web App and its
 
 4. **Verify OpenAI deployment** (if using Azure OpenAI backend):
    - In Azure Portal, open the OpenAI resource (e.g. `clearmatch-openai`).
-   - Go to **Deployments** and ensure there is at least one `Running` deployment (e.g. `gpt-4o-mini` or `deepseek-v3.2-clearmatch`).
+  - Go to **Deployments** and ensure there is at least one `Running` deployment (e.g. `gpt-4o`).
    - If using `OpenAIDeployment` in app settings, this name must match exactly.
    - If you see `DeploymentNotFound` in logs, update the SWA app setting and retry.
 
@@ -64,7 +64,7 @@ This document outlines the steps to deploy the ClearMatch Static Web App and its
 1. In the Azure Portal, go to the Static Web App resource.
 2. Under **Configuration > Application settings**, add the following keys (values provided by your Azure OpenAI resource):
    - `OpenAIEndpoint` – e.g. `https://<your-instance>.openai.azure.com/`
-   - `OpenAIDeployment` – e.g. `gpt-4o-mini`
+  - `OpenAIDeployment` – e.g. `gpt-4o`
    - `OpenAIKey` – API key string
 
 3. Save and restart the app if prompted.
@@ -76,7 +76,7 @@ This document outlines the steps to deploy the ClearMatch Static Web App and its
 1. In Azure Portal, click **Create a resource** → search `Azure OpenAI` → **Create**.
 2. Choose subscription, resource group (`clearmatch-rg`), name (e.g., `clearmatch-openai`), region (e.g., West US 2), pricing tier (`S0`).
 3. Complete create and deploy.
-4. In the OpenAI resource, go to **Deployments** and create a deployment (e.g., model `gpt-4o-mini`, name `gpt-4o-mini`).
+4. In the OpenAI resource, go to **Deployments** and create a deployment (e.g., model `gpt-4o`, name `gpt-4o`).
 5. In **Keys and Endpoint**, copy the endpoint and one key.
 
 ## 3.2. Set app settings via CLI
@@ -89,7 +89,7 @@ az staticwebapp appsettings set \
   --resource-group clearmatch-rg \
   --settings \
     OpenAIEndpoint="https://<your-instance>.openai.azure.com/" \
-    OpenAIDeployment="gpt-4o-mini" \
+    OpenAIDeployment="gpt-4o" \
     OpenAIKey="<your-openai-key>"
 ```
 
@@ -118,7 +118,7 @@ Static Web App.
 5. For the **Reconcile Agent**:
    - Name: `clearmatch-reconcile-agent`
    - Description: Deterministic payroll/trustee reconciliation logic
-   - Model: Select `deepseek-v3.2-clearmatch` or your preferred deployment
+  - Model: Select `gpt-4o` or your preferred deployment
    - Prompt: "You are a JSON-output agent. Input: {\"payroll\": [...],\"trustee\": [...]}. For each payroll row, join on EmpId+Period, compare expected vs received ER/EE amounts within tolerance, classify as Matched/Underpay/Overpay/Missing/Mismatch, and emit a result object with totalEmployees, matchRate and exceptions[] according to the README schema."
    - Response format: JSON with the schema from the README (totalEmployees, matchRate, exceptions array).
 6. Save the agent and note the **Endpoint URL** and **API Key** from the agent details.
@@ -149,7 +149,7 @@ $body = @"
   "name": "clearmatch-reconcile-agent",
   "description": "Deterministic payroll/trustee reconciliation logic",
   "project": "<your-project-id-or-name>",
-  "modelDeployment": "deepseek-v3.2-clearmatch",
+  "modelDeployment": "gpt-4o",
   "prompt": "...system prompt text...",
   "schema": { /* JSON schema per README */ }
 }
@@ -282,12 +282,12 @@ This section documents the specific values and configurations used in the succes
 - **Static Web App**: `mpf-clearmatch-swa` (Location: West US 2, URL: `https://salmon-smoke-05d320f1e.6.azurestaticapps.net`)
 - **Azure OpenAI Resource**: `khskw-mm8sjfq1-swedencentral` (Resource Group: `rg-mpf-clearmatch`, Location: Sweden Central)
   - Endpoint: `https://khskw-mm8sjfq1-swedencentral.cognitiveservices.azure.com/`
-  - Deployment: `DeepSeek-V3.2`
+  - Deployment: `gpt-4o`
   - API Key: Configured in SWA app settings (redacted for security)
 
 ### Application Settings
 - `OpenAIEndpoint`: `https://khskw-mm8sjfq1-swedencentral.cognitiveservices.azure.com/`
-- `OpenAIDeployment`: `DeepSeek-V3.2`
+- `OpenAIDeployment`: `gpt-4o`
 - `OpenAIKey`: [API key provided during setup]
 
 ### GitHub Integration

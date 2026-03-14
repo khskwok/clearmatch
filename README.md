@@ -46,7 +46,7 @@ ClearMatch is built as a thin, Git-deployable front end with serverless APIs:
     - `/api/explain` – generates AI explanations via Azure OpenAI.
 
 - **AI Integration**
-  - Uses Azure OpenAI for explanations (model deployment: `DeepSeek-V3.2`).
+  - Uses Azure OpenAI for explanations (model deployment: `gpt-4o`).
   - No Foundry agents in current implementation; reconciliation is handled directly in code for auditability.
 
 ### Architecture Diagram
@@ -56,7 +56,7 @@ ClearMatch is built as a thin, Git-deployable front end with serverless APIs:
                      |
                      +--> [API Functions (/api/reconcile, /api/explain)]
                           |
-                          +--> [Azure OpenAI Service (DeepSeek-V3.2)]
+                          +--> [Azure OpenAI Service (gpt-4o)]
 ```
 
 - **Frontend**: Single-page app for file uploads and results display.
@@ -117,7 +117,7 @@ ClearMatch is built as a thin, Git-deployable front end with serverless APIs:
   - `/api` – SWA Functions (`reconcile.js`, `explain.js`).
   - `/tools` – optional scripts to create/update Foundry agents and clean up.
 - Azure Static Web Apps for hosting and CI/CD.
-- Azure OpenAI for AI explanations (model: DeepSeek-V3.2).
+- Azure OpenAI for AI explanations (model: gpt-4o).
 
 ---
 
@@ -186,7 +186,7 @@ ClearMatch is built as a thin, Git-deployable front end with serverless APIs:
 ## What’s next for ClearMatch
 
 - **Quota-aware model deployment**
-  - Use Foundry model deployments (e.g. DeepSeek-V3.2 or GPT-5-mini), and tune prompts for MPF-specific language once quota and model availability are confirmed.
+  - Use Foundry model deployments (e.g. gpt-4o or GPT-5-mini), and tune prompts for MPF-specific language once quota and model availability are confirmed.
 
 - **Richer analytics**
   - Dashboards for:
