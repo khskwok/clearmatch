@@ -108,8 +108,8 @@ ClearMatch is built as a thin, Git-deployable front end with serverless APIs:
 
 ## Challenges we ran into
 
-- **Zero Azure OpenAI quota**
-  - The subscription initially had 0 quota to even create an Azure OpenAI resource.
+- **Non-transparent Azure OpenAI resource policy**
+  - The subscription's OpenAI resource policies are not clearly documented, making it difficult to know what models are available for testing.
   - We designed the app so it could run with a **mock explanation** backend until quota or an alternative model (via Foundry) was available.
 
 - **Aligning data formats**
