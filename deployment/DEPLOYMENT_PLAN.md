@@ -273,4 +273,34 @@ To remove all deployed resources:
 
 ---
 
-This plan provides a complete path from local code to a running cloud application with configuration and cleanup. Adjust resource names, locations, and branch names to fit your environment.
+## 8. Actual Deployment Details
+
+This section documents the specific values and configurations used in the successful deployment of ClearMatch.
+
+### Azure Resources
+- **Resource Group**: `clearmatch-rg` (Location: East US)
+- **Static Web App**: `mpf-clearmatch-swa` (Location: West US 2, URL: `https://salmon-smoke-05d320f1e.6.azurestaticapps.net`)
+- **Azure OpenAI Resource**: `khskw-mm8sjfq1-swedencentral` (Resource Group: `rg-mpf-clearmatch`, Location: Sweden Central)
+  - Endpoint: `https://khskw-mm8sjfq1-swedencentral.cognitiveservices.azure.com/`
+  - Deployment: `DeepSeek-V3.2`
+  - API Key: Configured in SWA app settings (redacted for security)
+
+### Application Settings
+- `OpenAIEndpoint`: `https://khskw-mm8sjfq1-swedencentral.cognitiveservices.azure.com/`
+- `OpenAIDeployment`: `DeepSeek-V3.2`
+- `OpenAIKey`: [API key provided during setup]
+
+### GitHub Integration
+- Repository: `https://github.com/khskwok/clearmatch`
+- Branch: `main`
+- Build Status: Successful (GitHub Actions triggered on push)
+
+### Testing Results
+- **Reconcile API**: Functional, returns correct match rate and exceptions.
+- **Explain API**: Functional, generates AI explanations using Azure OpenAI.
+- **Frontend**: Accessible and interactive.
+
+### Notes
+- Foundry agents were not implemented; reconciliation uses direct code logic for auditability.
+- Secrets were removed from git history to comply with GitHub's push protection.
+- Deployment completed on March 14, 2026.

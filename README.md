@@ -32,7 +32,7 @@ You can ask it things like “Show me who is underpaid this month and why,” an
 
 ## Architecture overview
 
-ClearMatch is built as a thin, Git-deployable front end on top of reusable Microsoft Foundry agents:
+ClearMatch is built as a thin, Git-deployable front end with serverless APIs:
 
 - **UI and API**
   - Azure Static Web App (`mpf-clearmatch-swa`).
@@ -42,40 +42,12 @@ ClearMatch is built as a thin, Git-deployable front end on top of reusable Micro
     - Viewing a table of reconciled records and exceptions.
     - Triggering explanation generation per exception.
   - Backend Functions:
-    - `/api/reconcile` – calls the Reconcile agent.
-    - `/api/explain` – calls the Explain agent.
+    - `/api/reconcile` – performs deterministic reconciliation logic.
+    - `/api/explain` – generates AI explanations via Azure OpenAI.
 
-- **Agents (Microsoft Foundry)**
-  - **Reconcile Agent (`clearmatch-reconcile-agent`)**
-    - Input: JSON payload with `payroll[]` and `trustee[]`.
-    - Logic:
-      - Join by `(EmpId, Period)`.
-      - Apply numeric tolerance (e.g. 0.01).
-      - Classify each row as:
-        - `Matched`
-        - `Underpay`
-        - `Overpay`
-        - `Missing` (no trustee record)
-        - `Mismatch` (other discrepancies)
-      - Attach reason codes like `UNDERPAY`, `OVERPAY`, `NO_TRUSTEE_RECORD`, `MISMATCH`, `OK`.
-    - Output:
-      - `totalEmployees`
-      - `matchRate`
-      - `exceptions[]` with fields like `empId`, `empName`, `period`, `expectedER/EE`, `receivedER/EE`, `issueType`, `status`, `reasonCode`.
-
-  - **Explain Agent (`clearmatch-explain-agent`)**
-    - Input: a single `exception` object from the reconciliation output.
-    - Output: a 2–4 sentence explanation that:
-      - Describes what is wrong for that employee/period.
-      - Suggests likely operational cause (e.g. missing trustee line, wrong salary, late remittance).
-      - Recommends a clear next action (e.g. contact employer to collect HKD X underpayment).
-    - Constraints:
-      - Never change any numbers or periods from the input.
-      - Output plain text only.
-
-- **Model**
-  - Both agents use a shared model deployment in Microsoft Foundry (for example, **DeepSeek-V3.2** or a GPT family model).
-  - The model is referenced by deployment name (e.g. `deepseek-v3.2-clearmatch`) so it can be swapped without changing the app.
+- **AI Integration**
+  - Uses Azure OpenAI for explanations (model deployment: `DeepSeek-V3.2`).
+  - No Foundry agents in current implementation; reconciliation is handled directly in code for auditability.
 
 ---
 
@@ -109,8 +81,6 @@ ClearMatch is built as a thin, Git-deployable front end on top of reusable Micro
   - `matchRate`
   - `exceptions[]` with fields like `empId`, `empName`, `period`, `expectedER/EE`, `receivedER/EE`, `issueType`, `reasonCode`.
 
-> In the newer architecture, this logic can live inside the Reconcile agent itself, with `/api/reconcile` acting as a proxy that forwards the JSON payload to the agent and returns its JSON result.
-
 ### Explanation API (`explain`)
 
 - Node.js Azure Function under `/api/explain`.
@@ -119,7 +89,7 @@ ClearMatch is built as a thin, Git-deployable front end on top of reusable Micro
   - Employee ID/name, period.
   - Expected and received ER/EE.
   - Issue type and reason code.
-- Calls the Explain agent (or an Azure OpenAI / Foundry model deployment) using Chat Completions.
+- Calls Azure OpenAI using Chat Completions.
 - Returns a 2–4 sentence explanation:
   - What is wrong.
   - Likely operational cause (e.g., missing trustee line, wrong salary, late remittance).
@@ -132,9 +102,7 @@ ClearMatch is built as a thin, Git-deployable front end on top of reusable Micro
   - `/api` – SWA Functions (`reconcile.js`, `explain.js`).
   - `/tools` – optional scripts to create/update Foundry agents and clean up.
 - Azure Static Web Apps for hosting and CI/CD.
-- Microsoft Foundry project for:
-  - Model deployment (e.g. DeepSeek-V3.2).
-  - Reconcile and Explain agents.
+- Azure OpenAI for AI explanations (model: DeepSeek-V3.2).
 
 ---
 
@@ -197,6 +165,19 @@ ClearMatch is built as a thin, Git-deployable front end on top of reusable Micro
   - `DeploymentNotFound` means the OpenAI resource deployment name is wrong or not ready.
   - App setting must exactly match OpenAI deployment name.
   - Use Key Vault + managed identity for secret management, then map into SWA settings.
+
+---
+
+## Deployment Status
+
+ClearMatch is currently deployed and running on Azure:
+
+- **Live URL**: https://salmon-smoke-05d320f1e.6.azurestaticapps.net
+- **Azure Resources**: Static Web App (`mpf-clearmatch-swa`) in `clearmatch-rg`, integrated with Azure OpenAI.
+- **CI/CD**: GitHub Actions for automatic deployments on push to `main` branch.
+- **APIs Tested**: Both `/api/reconcile` and `/api/explain` are functional.
+
+For deployment instructions, see `deployment/DEPLOYMENT_PLAN.md`.
 
 ---
 
