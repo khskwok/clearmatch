@@ -1,35 +1,22 @@
 const { app } = require('@azure/functions');
 const https = require('https');
 
-function callAzureOpenAI(prompt) {
+function callFoundry(prompt) {
   return new Promise((resolve, reject) => {
-    const endpoint = process.env.OpenAIEndpoint;      // e.g. https://xxx.openai.azure.com/
-    const deployment = process.env.OpenAIDeployment;  // e.g. gpt-4o-mini
-    const apiKey = process.env.OpenAIKey;
+    const endpoint = process.env.FoundryEndpoint; // e.g. https://xxx.services.ai.azure.com/api/projects/yyy
+    const apiKey = process.env.FoundryKey;
+    const assistant = 'clearmatch-explain';
 
-    if (!endpoint || !deployment || !apiKey) {
-      return reject(new Error('OpenAI endpoint, key, or deployment not configured.'));
+    if (!endpoint || !apiKey) {
+      return reject(new Error('Foundry endpoint or key not configured.'));
     }
 
-    const url = new URL(
-      `/openai/deployments/${deployment}/chat/completions?api-version=2024-08-01-preview`,
-      endpoint
-    );
+    const url = `${endpoint}/assistants/${assistant}/run`;
 
     const body = JSON.stringify({
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are an MPF operations analyst. Explain reconciliation issues clearly and briefly for business users. Do not change any numbers.'
-        },
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
-      temperature: 0.1,
-      max_tokens: 250
+      input: {
+        query: prompt,
+      },
     });
 
     const options = {
@@ -47,15 +34,20 @@ function callAzureOpenAI(prompt) {
       res.on('end', () => {
         if (res.statusCode < 200 || res.statusCode >= 300) {
           let detail = chunks;
-          try { detail = JSON.parse(chunks); } catch (e) {}
-          return reject(new Error(`OpenAI API returned ${res.statusCode}: ${JSON.stringify(detail)}`));
+          try {
+            detail = JSON.parse(chunks);
+          } catch (e) {
+            // ignore
+          }
+          return reject(new Error(`Foundry API returned ${res.statusCode}: ${JSON.stringify(detail)}`));
         }
+
         try {
           const json = JSON.parse(chunks);
-          const text = json.choices?.[0]?.message?.content || 'No explanation generated.';
+          const text = json.output || json.response || 'No explanation generated.';
           resolve(text);
         } catch (e) {
-          reject(new Error(`Invalid OpenAI response: ${e.message} (${chunks})`));
+          reject(new Error(`Invalid Foundry response: ${e.message} (${chunks})`));
         }
       });
     });
@@ -96,7 +88,7 @@ Explain in 2–4 sentences:
 Keep all numbers exactly as provided.
 `;
 
-      const explanation = await callAzureOpenAI(prompt);
+  const explanation = await callFoundry(prompt);
 
       return {
         status: 200,
