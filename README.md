@@ -47,6 +47,7 @@ ClearMatch is built as a thin, Git-deployable front end with serverless APIs:
 
 - **AI Integration**
   - Uses Microsoft Foundry configuration (`FoundryEndpoint`, `FoundryKey`) when enabled.
+  - Target model for model-assisted explanations: `gpt-4o`.
   - Explanation endpoint supports deterministic fallback behavior for reliability.
   - Reconciliation is handled directly in code for auditability.
 
