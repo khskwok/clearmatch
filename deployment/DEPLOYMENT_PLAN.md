@@ -15,12 +15,12 @@ This document outlines the steps to deploy the ClearMatch Static Web App and its
 
 ## 2. Create Azure Resources
 
-1. **Resource group** (if not already created):
+- **Resource group** (if not already created):
    ```powershell
   az group create --name <resourceGroup> --location <region>
    ```
 
-2. **Static Web App** (replace <appName> with a globally unique name):
+- **Static Web App** (replace <appName> with a globally unique name):
    ```powershell
    az staticwebapp create \
     --name <appName> \
@@ -47,9 +47,9 @@ This document outlines the steps to deploy the ClearMatch Static Web App and its
      the Azure Portal and choose "Skip GitHub workflow" on the creation page
      (this produces an empty SWA resource you can deploy to manually).
 
-3. **Verify** the deployment in the Azure Portal: navigate to the Static Web App resource and note the default URL.
+- **Verify** the deployment in the Azure Portal: navigate to the Static Web App resource and note the default URL.
 
-4. **Verify OpenAI deployment** (if using Azure OpenAI backend):
+- **Verify OpenAI deployment** (if using Azure OpenAI backend):
   - In Azure Portal, open the OpenAI resource (e.g. `<openaiResourceName>`).
   - Go to **Deployments** and ensure there is at least one `Running` deployment (e.g. `gpt-4o`).
    - If using `OpenAIDeployment` in app settings, this name must match exactly.
@@ -249,18 +249,18 @@ command is required.
 
 To remove all deployed resources:
 
-1. **Delete the Static Web App**:
+- **Delete the Static Web App**:
 
    ```powershell
   az staticwebapp delete --name <appName> --resource-group <resourceGroup> --yes
    ```
 
-2. **Delete the resource group** (if no other resources exist):
+- **Delete the resource group** (if no other resources exist):
    ```powershell
   az group delete --name <resourceGroup> --yes --no-wait
    ```
 
-3. Optionally, remove local build artifacts or temp files.
+- Optionally, remove local build artifacts or temp files.
 
 > ⚠️ Be cautious: deleting the resource group removes **all** contained resources.
 
