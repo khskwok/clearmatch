@@ -1,41 +1,11 @@
 const { app } = require('@azure/functions');
-const https = require('https');
 
-function callFoundry(prompt) {
-  return new Promise((resolve, reject) => {
-    const endpoint = process.env.FoundryEndpoint; // e.g. https://xxx.services.ai.azure.com/api/projects/yyy
-    const apiKey = process.env.FoundryKey;
-    const assistant = 'clearmatch-explain';
-
-    if (!endpoint || !apiKey) {
-      return reject(new Error('Foundry endpoint or key not configured.'));
-    }
-
-    const url = `${endpoint}/assistants/${assistant}/run`;
-
-    const body = JSON.stringify({
-      input: {
-        query: prompt,
-      },
-    });
-
-          try {
-            const body = await request.json();
-            const ex = body.exception || {};
-            const explanation = buildFallbackExplanation(ex);
-            return {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ explanation })
-            };
-          } catch (err) {
-            context.log.error(err);
-            return {
-              status: 400,
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ error: 'Invalid request payload for explain.' })
-            };
-          }
+function buildFallbackExplanation(ex) {
+  const expectedER = Number(ex.expectedER || 0);
+  const expectedEE = Number(ex.expectedEE || 0);
+  const receivedER = Number(ex.receivedER || 0);
+  const receivedEE = Number(ex.receivedEE || 0);
+  const diffER = +(expectedER - receivedER).toFixed(2);
   const diffEE = +(expectedEE - receivedEE).toFixed(2);
 
   const issue = ex.issueType || 'Mismatch';
@@ -46,7 +16,7 @@ function callFoundry(prompt) {
     : 'likely payroll/trustee mapping mismatch or contribution calculation variance';
   const action = diffER > 0 || diffEE > 0
     ? `contact employer and trustee to reconcile underpayment (ER ${diffER}, EE ${diffEE})`
-    : `review source payroll and trustee files for this employee and period`;
+    : 'review source payroll and trustee files for this employee and period';
 
   return `Employee ${id} for period ${period} is flagged as ${issue}. Expected ER/EE is ${expectedER}/${expectedEE}, while received ER/EE is ${receivedER}/${receivedEE}. The likely operations cause is ${cause}. Next action: ${action}.`;
 }
@@ -55,50 +25,22 @@ app.http('explain', {
   methods: ['POST'],
   authLevel: 'anonymous',
   route: 'explain',
-  handler: async (request, context) => {
+  handler: async (request) => {
     try {
       const body = await request.json();
       const ex = body.exception || {};
-
-      const prompt = `
-You are reconciling MPF contributions for an employee.
-
-Data:
-- Employee ID: ${ex.empId || 'N/A'}
-- Employee name: ${ex.empName || 'N/A'}
-- Period: ${ex.period || 'N/A'}
-- Expected employer (ER) contribution: ${ex.expectedER}
-- Expected employee (EE) contribution: ${ex.expectedEE}
-- Received employer (ER) contribution: ${ex.receivedER}
-- Received employee (EE) contribution: ${ex.receivedEE}
-- Issue type: ${ex.issueType}
-- Reason code: ${ex.reasonCode}
-
-Explain in 2–4 sentences:
-1) What is wrong for this employee and period.
-2) Likely MPF operations cause (e.g. missing line in trustee file, wrong salary, late payment).
-3) A specific next action (e.g. contact employer to collect underpayment HKD X).
-Keep all numbers exactly as provided.
-`;
-
-      let explanation;
-      try {
-        explanation = await callFoundry(prompt);
-      } catch (err) {
-        context.log.warn(`Foundry unavailable, using fallback explanation: ${err.message}`);
-        explanation = buildFallbackExplanation(ex);
-      }
+      const explanation = buildFallbackExplanation(ex);
 
       return {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ explanation })
       };
-    } catch (err) {
-      context.log.error(err);
+    } catch (_err) {
       return {
-        status: 500,
-        body: JSON.stringify({ error: err.message })
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: 'Invalid request payload for explain.' })
       };
     }
   }
