@@ -168,16 +168,46 @@ ClearMatch is built as a thin, Git-deployable front end with serverless APIs:
 
 ---
 
-## Deployment Status
+## Demo Video
 
-ClearMatch is currently deployed and running on Azure:
+[Watch the 2-minute demo video](https://youtu.be/example) showing ClearMatch in action: uploading CSV files, running reconciliation, and generating AI explanations.
 
-- **Live URL**: https://salmon-smoke-05d320f1e.6.azurestaticapps.net
-- **Azure Resources**: Static Web App (`mpf-clearmatch-swa`) in `clearmatch-rg`, integrated with Azure OpenAI.
-- **CI/CD**: GitHub Actions for automatic deployments on push to `main` branch.
-- **APIs Tested**: Both `/api/reconcile` and `/api/explain` are functional.
+---
 
-For deployment instructions, see `deployment/DEPLOYMENT_PLAN.md`.
+## Architecture Diagram
+
+```
+[Frontend (SPA)] --> [Azure Static Web App]
+                     |
+                     +--> [API Functions (/api/reconcile, /api/explain)]
+                          |
+                          +--> [Azure OpenAI Service (DeepSeek-V3.2)]
+```
+
+- **Frontend**: Single-page app for file uploads and results display.
+- **Backend**: Serverless functions on Azure SWA.
+- **AI Layer**: Azure OpenAI for generating explanations.
+- **Deployment**: GitHub Actions for CI/CD to Azure SWA.
+
+---
+
+## Team Information
+
+- **Team Member**: [Name] (Microsoft Learn Username: [username])
+- **Project Lead**: [Name] (Microsoft Learn Username: [username])
+
+---
+
+## Submission Details
+
+This project meets the hackathon requirements:
+
+- **Working Project**: Deployed on Azure with functional APIs.
+- **Problem Solved**: Automates manual MPF reconciliation with AI insights.
+- **Technologies Used**: Azure Static Web Apps, Azure OpenAI, GitHub Actions.
+- **GitHub Repository**: https://github.com/khskwok/clearmatch
+- **Demo Video**: Linked above.
+- **Architecture Diagram**: Illustrated above.
 
 ---
 
