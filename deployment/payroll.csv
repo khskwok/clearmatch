@@ -1,0 +1,4 @@
+﻿EmpId,EmpName,Period,ExpectedER,ExpectedEE
+E001,Alice Chen,2026-03,1200.00,600.00
+E002,Bob Lee,2026-03,1100.00,550.00
+E003,Carol Ng,2026-03,1300.00,650.00

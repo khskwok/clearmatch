@@ -1,0 +1,13 @@
+{
+  "configurations": {
+    "default": {
+      "appLocation": ".",
+      "apiLocation": "api",
+      "outputLocation": ".",
+      "apiLanguage": "node",
+      "apiVersion": "18",
+      "appName": "mpf-clearmatch-swa",
+      "resourceGroup": "clearmatch-rg"
+    }
+  }
+}
