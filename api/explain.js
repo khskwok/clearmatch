@@ -19,51 +19,23 @@ function callFoundry(prompt) {
       },
     });
 
-    const options = {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'api-key': apiKey,
-        'Content-Length': Buffer.byteLength(body)
-      }
-    };
-
-    const req = https.request(url, options, (res) => {
-      let chunks = '';
-      res.on('data', (d) => (chunks += d));
-      res.on('end', () => {
-        if (res.statusCode < 200 || res.statusCode >= 300) {
-          let detail = chunks;
           try {
-            detail = JSON.parse(chunks);
-          } catch (e) {
-            // ignore
+            const body = await request.json();
+            const ex = body.exception || {};
+            const explanation = buildFallbackExplanation(ex);
+            return {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ explanation })
+            };
+          } catch (err) {
+            context.log.error(err);
+            return {
+              status: 400,
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ error: 'Invalid request payload for explain.' })
+            };
           }
-          return reject(new Error(`Foundry API returned ${res.statusCode}: ${JSON.stringify(detail)}`));
-        }
-
-        try {
-          const json = JSON.parse(chunks);
-          const text = json.output || json.response || 'No explanation generated.';
-          resolve(text);
-        } catch (e) {
-          reject(new Error(`Invalid Foundry response: ${e.message} (${chunks})`));
-        }
-      });
-    });
-
-    req.on('error', reject);
-    req.write(body);
-    req.end();
-  });
-}
-
-function buildFallbackExplanation(ex) {
-  const expectedER = Number(ex.expectedER || 0);
-  const expectedEE = Number(ex.expectedEE || 0);
-  const receivedER = Number(ex.receivedER || 0);
-  const receivedEE = Number(ex.receivedEE || 0);
-  const diffER = +(expectedER - receivedER).toFixed(2);
   const diffEE = +(expectedEE - receivedEE).toFixed(2);
 
   const issue = ex.issueType || 'Mismatch';
