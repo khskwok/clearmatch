@@ -49,6 +49,21 @@ ClearMatch is built as a thin, Git-deployable front end with serverless APIs:
   - Uses Azure OpenAI for explanations (model deployment: `DeepSeek-V3.2`).
   - No Foundry agents in current implementation; reconciliation is handled directly in code for auditability.
 
+### Architecture Diagram
+
+```
+[Frontend (SPA)] --> [Azure Static Web App]
+                     |
+                     +--> [API Functions (/api/reconcile, /api/explain)]
+                          |
+                          +--> [Azure OpenAI Service (DeepSeek-V3.2)]
+```
+
+- **Frontend**: Single-page app for file uploads and results display.
+- **Backend**: Serverless functions on Azure SWA.
+- **AI Layer**: Azure OpenAI for generating explanations.
+- **Deployment**: GitHub Actions for CI/CD to Azure SWA.
+
 ---
 
 ## How we built it
@@ -165,49 +180,6 @@ ClearMatch is built as a thin, Git-deployable front end with serverless APIs:
   - `DeploymentNotFound` means the OpenAI resource deployment name is wrong or not ready.
   - App setting must exactly match OpenAI deployment name.
   - Use Key Vault + managed identity for secret management, then map into SWA settings.
-
----
-
-## Demo Video
-
-[Watch the 2-minute demo video](https://youtu.be/example) showing ClearMatch in action: uploading CSV files, running reconciliation, and generating AI explanations.
-
----
-
-## Architecture Diagram
-
-```
-[Frontend (SPA)] --> [Azure Static Web App]
-                     |
-                     +--> [API Functions (/api/reconcile, /api/explain)]
-                          |
-                          +--> [Azure OpenAI Service (DeepSeek-V3.2)]
-```
-
-- **Frontend**: Single-page app for file uploads and results display.
-- **Backend**: Serverless functions on Azure SWA.
-- **AI Layer**: Azure OpenAI for generating explanations.
-- **Deployment**: GitHub Actions for CI/CD to Azure SWA.
-
----
-
-## Team Information
-
-- **Team Member**: [Name] (Microsoft Learn Username: [username])
-- **Project Lead**: [Name] (Microsoft Learn Username: [username])
-
----
-
-## Submission Details
-
-This project meets the hackathon requirements:
-
-- **Working Project**: Deployed on Azure with functional APIs.
-- **Problem Solved**: Automates manual MPF reconciliation with AI insights.
-- **Technologies Used**: Azure Static Web Apps, Azure OpenAI, GitHub Actions.
-- **GitHub Repository**: https://github.com/khskwok/clearmatch
-- **Demo Video**: Linked above.
-- **Architecture Diagram**: Illustrated above.
 
 ---
 
