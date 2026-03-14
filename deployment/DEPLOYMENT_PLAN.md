@@ -17,10 +17,13 @@ This document outlines the steps to deploy the ClearMatch Static Web App and its
 
 1. **Resource group** (if not already created):
    ```powershell
-  az group create --name &lt;resourceGroup&gt; --location "&lt;region&gt;"
+  az group create --name &lt;resourceGroup&gt; --location &lt;region&gt;
    ```
 
-2. **Static Web App** (replace `<appName>` with a globally unique name):
+X
+
+
+2. **Static Web App** (replace <appName> with a globally unique name):
    ```powershell
    az staticwebapp create \
     --name &lt;appName&gt; \
