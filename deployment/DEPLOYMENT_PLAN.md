@@ -17,14 +17,14 @@ This document outlines the steps to deploy the ClearMatch Static Web App and its
 
 1. **Resource group** (if not already created):
    ```powershell
-  az group create --name <resourceGroup> --location "<region>"
+  az group create --name &lt;resourceGroup&gt; --location "&lt;region&gt;"
    ```
 
 2. **Static Web App** (replace `<appName>` with a globally unique name):
    ```powershell
    az staticwebapp create \
-    --name <appName> \
-    --resource-group <resourceGroup> \
+    --name &lt;appName&gt; \
+    --resource-group &lt;resourceGroup&gt; \
      --source . \
      --location "westus2" \  # choose a supported region (eastus is not valid)
      --app-location "/" \
@@ -85,18 +85,18 @@ Run from repository root (or any working folder):
 
 ```powershell
 az staticwebapp appsettings set \
-  --name <appName> \
-  --resource-group <resourceGroup> \
+  --name &lt;appName&gt; \
+  --resource-group &lt;resourceGroup&gt; \
   --settings \
-    OpenAIEndpoint="https://<your-instance>.openai.azure.com/" \
+    OpenAIEndpoint="https://&lt;your-instance&gt;.openai.azure.com/" \
     OpenAIDeployment="gpt-4o" \
-    OpenAIKey="<your-openai-key>"
+    OpenAIKey="&lt;your-openai-key&gt;"
 ```
 
 Verify with:
 
 ```powershell
-az staticwebapp appsettings list --name <appName> --resource-group <resourceGroup>
+az staticwebapp appsettings list --name &lt;appName&gt; --resource-group &lt;resourceGroup&gt;
 ```
 
 `properties` should list `OpenAIEndpoint`, `OpenAIDeployment`, `OpenAIKey`.
@@ -148,7 +148,7 @@ $body = @"
 {
   "name": "clearmatch-reconcile-agent",
   "description": "Deterministic payroll/trustee reconciliation logic",
-  "project": "<your-project-id-or-name>",
+  "project": "&lt;your-project-id-or-name&gt;",
   "modelDeployment": "gpt-4o",
   "prompt": "...system prompt text...",
   "schema": { /* JSON schema per README */ }
@@ -157,7 +157,7 @@ $body = @"
 
 az rest \
   --method POST \
-  --uri "https://<your-foundry-endpoint>/v1/agents" \
+  --uri "https://&lt;your-foundry-endpoint&gt;/v1/agents" \
   --headers "Authorization=Bearer $token" "Content-Type=application/json" \
   --body $body
 ```
@@ -192,7 +192,7 @@ redeploy of an existing site.
 
 ```powershell
 # check status of SWA
-az staticwebapp show --name <appName> --resource-group <resourceGroup>
+az staticwebapp show --name &lt;appName&gt; --resource-group &lt;resourceGroup&gt;
 ```
 
 - If the command returns JSON with details (see earlier examples), the app is
@@ -218,7 +218,7 @@ az staticwebapp show --name <appName> --resource-group <resourceGroup>
 - To deploy or redeploy without Actions, run the CLI command from the repo
   root:
   ```powershell
-  az staticwebapp upload --name <appName> --resource-group <resourceGroup> --source .
+  az staticwebapp upload --name &lt;appName&gt; --resource-group &lt;resourceGroup&gt; --source .
   ```
   (This works whether the SWA already exists or is brand new.)
 - Alternatively, use `swa deploy` from the Static Web Apps CLI once
@@ -251,12 +251,12 @@ To remove all deployed resources:
 
 1. **Delete the Static Web App**:
    ```powershell
-  az staticwebapp delete --name <appName> --resource-group <resourceGroup> --yes
+  az staticwebapp delete --name &lt;appName&gt; --resource-group &lt;resourceGroup&gt; --yes
    ```
 
 2. **Delete the resource group** (if no other resources exist):
    ```powershell
-  az group delete --name <resourceGroup> --yes --no-wait
+  az group delete --name &lt;resourceGroup&gt; --yes --no-wait
    ```
 
 3. Optionally, remove local build artifacts or temp files.
